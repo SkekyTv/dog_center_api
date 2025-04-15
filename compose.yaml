@@ -1,0 +1,18 @@
+name: dog-center-infra
+services:
+  postgres:
+    image: postgres:17.2-bookworm
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: dog_center_api
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5432:5432"
+
+networks:
+  default:
+    driver: bridge
+
+volumes:
+  postgres-data:
