@@ -74,6 +74,12 @@ class Trainer {
 
 `DogCenterApi` is based on clean architecture pattern.
 
+`Entities`: business logic
+`Use Cases`: business services
+`Interfaces/Adapters`: web handlers, implement repositories
+`Infra`: db
+`Main`: entry point and config
+
 ```css
 
 src/

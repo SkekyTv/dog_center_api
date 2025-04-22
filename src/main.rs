@@ -1,8 +1,8 @@
-use std::{net::SocketAddr, sync::Arc};
+use std::net::SocketAddr;
 
 use axum::{Json, Router, response::IntoResponse, routing::get};
+use interfaces::http::dogs::routes::dogs_routes;
 use listenfd::ListenFd;
-use sqlx::PgPool;
 use tokio::net::TcpListener as TokioTcpListener;
 
 use dotenv::dotenv;
@@ -10,19 +10,30 @@ use dotenv::dotenv;
 mod db;
 use db::init_fb_from_env;
 
-pub struct AppState {
-    db: PgPool,
-}
+mod app_state;
+use app_state::AppState;
+use tracing_subscriber::fmt;
+
+mod entities;
+mod infra;
+mod interfaces;
+mod repositories;
+mod use_cases;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-
+    fmt()
+        .with_env_filter("sqlx=debug") // Log SQLx en mode debug
+        .init();
     let pool = init_fb_from_env().await?;
+
+    let state = AppState::build(pool).await;
 
     let app = Router::new()
         .route("/api/healthcheck", get(health_check_handler))
-        .with_state(Arc::new(AppState { db: pool.clone() }));
+        .nest("/api", dogs_routes())
+        .with_state(state);
 
     let listener = get_listener().await.expect("failed to bind listener");
 

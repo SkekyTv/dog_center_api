@@ -1,0 +1,11 @@
+### dog
+# get by id
+GET http://127.0.0.1:8080/api/dogs/1dc4ff97-c8b9-4487-bbdc-612852eac083
+
+### create
+POST http://127.0.0.1:8080/api/dogs
+Content-type: application/json
+
+{
+    "name": "pupuce"
+}

@@ -11,7 +11,7 @@ pub async fn init_fb_from_env() -> Result<PgPool, Box<dyn std::error::Error>> {
 
     // Vérifie si la base existe, sinon la crée
     let db_exists =
-        sqlx::query_scalar::<_, Option<String>>("SELECT 1 FROM pg_database WHERE datname = $1")
+        sqlx::query_scalar::<_, Option<i32>>("SELECT 1 FROM pg_database WHERE datname = $1")
             .bind(&db_name)
             .fetch_optional(&admin_pool)
             .await?
@@ -35,6 +35,8 @@ pub async fn init_fb_from_env() -> Result<PgPool, Box<dyn std::error::Error>> {
         .await?;
 
     println!("Connected to database '{}'", db_name);
+
+    sqlx::migrate!().run(&app_pool).await?;
 
     Ok(app_pool)
 }
