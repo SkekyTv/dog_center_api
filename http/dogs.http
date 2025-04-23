@@ -7,5 +7,7 @@ POST http://127.0.0.1:8080/api/dogs
 Content-type: application/json
 
 {
-    "name": "pupuce"
+    "name": "pupuce",
+    "birthdate": "2025-04-23T08:18:00Z",
+    "races": ["bichon"]
 }

@@ -3,20 +3,31 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{app_state::AppState, entities::dogs::Dogs};
 
+use validator::Validate;
+
 #[derive(Serialize)]
 pub struct DogsResponse {
     pub id: Uuid,
     pub name: String,
+    pub birthdate: Option<DateTime<Utc>>,
+    pub races: Vec<String>,
+    pub img_url: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct CreateDogRequest {
+    #[validate(length(min = 1))]
     pub name: String,
+    pub birthdate: Option<DateTime<Utc>>,
+
+    #[serde(default)] // default []
+    pub races: Vec<String>,
 }
 
 pub async fn get_dog_handler(
@@ -34,6 +45,9 @@ pub async fn get_dog_handler(
         Some(dog) => Ok(Json(DogsResponse {
             id: dog.id,
             name: dog.name,
+            birthdate: dog.birthdate,
+            races: dog.races,
+            img_url: dog.img_url,
         })),
         None => Err((StatusCode::NOT_FOUND, format!("Dog with id {id} not found"))),
     }
@@ -46,6 +60,9 @@ pub async fn create_dog_handler(
     let dog = Dogs {
         id: Uuid::new_v4(),
         name: payload.name,
+        birthdate: payload.birthdate,
+        races: payload.races,
+        img_url: None,
     };
 
     let repo = &state.dogs_service;
