@@ -41,8 +41,10 @@ class Dogs {
 class Customers {
     id
     name
-    birthdate
+    phone_number
     email
+    birthdate
+    sex
     pdw
     img
   }
@@ -52,19 +54,33 @@ class TrainingSessions {
     id
     date
     label
+    description
     adresse
+    img
+  }
+
+class TrainingSessionTemplates {
+    id
+    label
+    description
+    addresse
     img
   }
 
 class Trainer {
     id
     name
+    phone_number
+    email
+    birthdate
+    sex
   }
 
   Customers --> Dogs : owned
   Trainer --> Customers : trained
   TrainingSessions --> Customers : participate
   Trainer --> TrainingSessions : animate
+  Trainer --> TrainingSessionTemplates : define
   Dogs --> Skills : learned
 
 

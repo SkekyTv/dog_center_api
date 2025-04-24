@@ -18,6 +18,7 @@ mod entities;
 mod infra;
 mod interfaces;
 mod repositories;
+mod shared;
 mod use_cases;
 
 #[tokio::main]
