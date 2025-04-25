@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id::Uuid, name::Text, birthdate, races, img_url FROM dogs WHERE id = $1",
+  "query": "SELECT id::Uuid, name::Text, birthdate, races, img_url, sex FROM dogs WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -27,6 +27,22 @@
         "ordinal": 4,
         "name": "img_url",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "sex",
+        "type_info": {
+          "Custom": {
+            "name": "sex",
+            "kind": {
+              "Enum": [
+                "F",
+                "M",
+                "Other"
+              ]
+            }
+          }
+        }
       }
     ],
     "parameters": {
@@ -39,8 +55,9 @@
       false,
       true,
       false,
-      true
+      true,
+      false
     ]
   },
-  "hash": "72457365dfbf569496989ed7032f66b157fda2f45b654fa404be3c3d414ae94c"
+  "hash": "a47712a3af4b3d697f1df802e8b5022095f9361197e7748158811c8b4eef654b"
 }

@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{app_state::AppState, entities::dogs::Dogs};
+use crate::{app_state::AppState, entities::dogs::Dogs, shared::types::sex::Sex};
 
 use validator::Validate;
 
@@ -18,6 +18,7 @@ pub struct DogsResponse {
     pub birthdate: Option<DateTime<Utc>>,
     pub races: Vec<String>,
     pub img_url: Option<String>,
+    pub sex: Sex,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -28,6 +29,8 @@ pub struct CreateDogRequest {
 
     #[serde(default)] // default []
     pub races: Vec<String>,
+
+    pub sex: Sex,
 }
 
 pub async fn get_dog_handler(
@@ -48,6 +51,7 @@ pub async fn get_dog_handler(
             birthdate: dog.birthdate,
             races: dog.races,
             img_url: dog.img_url,
+            sex: dog.sex,
         })),
         None => Err((StatusCode::NOT_FOUND, format!("Dog with id {id} not found"))),
     }
@@ -63,6 +67,7 @@ pub async fn create_dog_handler(
         birthdate: payload.birthdate,
         races: payload.races,
         img_url: None,
+        sex: payload.sex,
     };
 
     let repo = &state.dogs_service;

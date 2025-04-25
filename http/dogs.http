@@ -9,5 +9,6 @@ Content-type: application/json
 {
     "name": "pupuce",
     "birthdate": "2025-04-23T08:18:00Z",
-    "races": ["bichon"]
+    "races": ["bichon"],
+    "sex": "F"
 }
