@@ -1,9 +1,9 @@
 ### dog
 # get by id
-GET http://127.0.0.1:8080/api/dogs/1dc4ff97-c8b9-4487-bbdc-612852eac083
+GET http://127.0.0.1:3000/api/dogs/83c928fc-c90f-46b9-a8fa-6752bb735c8f
 
 ### create
-POST http://127.0.0.1:8080/api/dogs
+POST http://127.0.0.1:3000/api/dogs
 Content-type: application/json
 
 {
