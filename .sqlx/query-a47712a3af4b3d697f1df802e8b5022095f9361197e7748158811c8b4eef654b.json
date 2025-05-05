@@ -1,0 +1,63 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id::Uuid, name::Text, birthdate, races, img_url, sex FROM dogs WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "birthdate",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "races",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 4,
+        "name": "img_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "sex",
+        "type_info": {
+          "Custom": {
+            "name": "sex",
+            "kind": {
+              "Enum": [
+                "F",
+                "M",
+                "Other"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "a47712a3af4b3d697f1df802e8b5022095f9361197e7748158811c8b4eef654b"
+}

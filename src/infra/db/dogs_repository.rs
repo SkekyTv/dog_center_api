@@ -13,19 +13,26 @@ pub struct PgDogsRepository {
 #[async_trait]
 impl DogsRepository for PgDogsRepository {
     async fn get_dog(&self, id: Uuid) -> Result<Option<Dogs>, sqlx::Error> {
-        sqlx::query_as!(
-            Dogs,
-            "SELECT id::Uuid, name::Text FROM dogs WHERE id = $1",
-            id
+        sqlx::query_as::<_, Dogs>(
+            "SELECT id::Uuid, name::Text, birthdate, races, img_url, sex FROM dogs WHERE id = $1",
         )
+        .bind(id)
         .fetch_optional(&self.pool)
         .await
     }
 
     async fn create_dog(&self, dog: Dogs) -> Result<(), sqlx::Error> {
-        sqlx::query!("INSERT INTO dogs VALUES ($1, $2)", dog.id, dog.name)
-            .execute(&self.pool)
-            .await?;
+        sqlx::query(
+            "INSERT INTO dogs (id, name, birthdate, races, img_url, sex) VALUES ($1, $2, $3, $4, $5, $6)",
+        )
+            .bind(dog.id)
+            .bind(&dog.name)
+            .bind(dog.birthdate)
+            .bind(&dog.races)
+            .bind(dog.img_url)
+            .bind(&dog.sex)
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 }
