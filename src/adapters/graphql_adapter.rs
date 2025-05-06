@@ -5,10 +5,12 @@ use axum::response::{Html, IntoResponse};
 use axum::{Router, extract::Extension, routing::get};
 use listenfd::ListenFd;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::net::TcpListener as TokioTcpListener;
 
 // Définir la racine des requêtes GraphQL
 pub struct QueryRoot;
+pub struct MutationRoot;
 
 #[async_graphql::Object]
 impl QueryRoot {
@@ -18,8 +20,10 @@ impl QueryRoot {
 }
 
 // Construire le schéma GraphQL
-fn build_schema(state: AppState) -> Schema<QueryRoot, EmptyMutation, EmptySubscription> {
-    Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
+fn build_schema(state: AppState) -> Schema<QueryRoot, MutationRoot, EmptySubscription> {
+    let dogs_service = Arc::new(state.dogs_service.clone());
+    Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+        .data(dogs_service)
         .data(state)
         .finish()
 }
