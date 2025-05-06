@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::shared::types::sex::Sex;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
-pub struct Dogs {
+pub struct Dog {
     pub id: Uuid,
     pub name: String,
     pub birthdate: Option<DateTime<Utc>>,
@@ -16,7 +16,7 @@ pub struct Dogs {
     pub icad_id: Option<String>,
 }
 
-impl Dogs {
+impl Dog {
     pub fn new(
         name: String,
         sex: Sex,
@@ -25,7 +25,7 @@ impl Dogs {
         weight: Option<i32>,
         icad_id: Option<String>,
     ) -> Self {
-        Dogs {
+        Dog {
             id: Uuid::new_v4(),
             name,
             birthdate,
@@ -44,7 +44,7 @@ mod tests {
 
     #[test]
     fn test_dog_constructor_minimal_params() {
-        let dog = Dogs::new(
+        let dog = Dog::new(
             "pupuce".to_string(),
             Sex::F,
             None,

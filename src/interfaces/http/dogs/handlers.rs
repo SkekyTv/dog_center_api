@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::{app_state::AppState, entities::dogs::Dogs, shared::types::sex::Sex};
+use crate::{app_state::AppState, entities::dogs::Dog, shared::types::sex::Sex};
 
 use validator::Validate;
 
@@ -30,7 +30,7 @@ pub struct CreateDogRequest {
 pub async fn get_dog_handler(
     Path(id): Path<Uuid>,
     State(state): State<AppState>,
-) -> Result<Json<Dogs>, (StatusCode, String)> {
+) -> Result<Json<Dog>, (StatusCode, String)> {
     let dogs_service = &state.dogs_service;
 
     let dog = dogs_service
@@ -47,8 +47,8 @@ pub async fn get_dog_handler(
 pub async fn create_dog_handler(
     State(state): State<AppState>,
     Json(payload): Json<CreateDogRequest>,
-) -> Result<(StatusCode, Json<Dogs>), (StatusCode, String)> {
-    let dog = Dogs::new(
+) -> Result<(StatusCode, Json<Dog>), (StatusCode, String)> {
+    let dog = Dog::new(
         payload.name,
         payload.sex,
         payload.birthdate,
