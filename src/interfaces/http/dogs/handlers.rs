@@ -21,6 +21,10 @@ pub struct CreateDogRequest {
     pub races: Vec<String>,
 
     pub sex: Sex,
+
+    pub weight: Option<i32>,
+
+    pub icad_id: Option<String>,
 }
 
 pub async fn get_dog_handler(
@@ -35,14 +39,7 @@ pub async fn get_dog_handler(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     match dog {
-        Some(dog) => Ok(Json(Dogs {
-            id: dog.id,
-            name: dog.name,
-            birthdate: dog.birthdate,
-            races: dog.races,
-            img_url: dog.img_url,
-            sex: dog.sex,
-        })),
+        Some(dog) => Ok(Json(dog)),
         None => Err((StatusCode::NOT_FOUND, format!("Dog with id {id} not found"))),
     }
 }
@@ -51,7 +48,14 @@ pub async fn create_dog_handler(
     State(state): State<AppState>,
     Json(payload): Json<CreateDogRequest>,
 ) -> Result<(StatusCode, Json<Dogs>), (StatusCode, String)> {
-    let dog = Dogs::new(payload.name, payload.sex, payload.birthdate, payload.races);
+    let dog = Dogs::new(
+        payload.name,
+        payload.sex,
+        payload.birthdate,
+        payload.races,
+        payload.weight,
+        payload.icad_id,
+    );
 
     let repo = &state.dogs_service;
 
