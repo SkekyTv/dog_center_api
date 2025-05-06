@@ -1,4 +1,4 @@
-use crate::entities::dogs::Dogs;
+use crate::entities::dogs::Dog;
 use crate::repositories::dogs_repository::DogsRepository;
 use uuid::Uuid;
 
@@ -11,11 +11,11 @@ impl<T: DogsRepository> DogsService<T> {
         Self { repo }
     }
 
-    pub async fn get_dog(&self, id: Uuid) -> Result<Option<Dogs>, sqlx::Error> {
+    pub async fn get_dog(&self, id: Uuid) -> Result<Option<Dog>, sqlx::Error> {
         self.repo.get_dog(id).await
     }
 
-    pub async fn create_dog(&self, dog: Dogs) -> Result<(), sqlx::Error> {
+    pub async fn create_dog(&self, dog: Dog) -> Result<(), sqlx::Error> {
         self.repo.create_dog(dog).await
     }
 }
