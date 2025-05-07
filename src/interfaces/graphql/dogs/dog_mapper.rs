@@ -17,3 +17,54 @@ pub fn map_dog_to_gql(dog: Dog) -> DogGQL {
         icad_id: dog.icad_id,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use async_graphql::{ScalarType, Value};
+    use chrono::Utc;
+
+    use crate::shared::types::sex::Sex;
+
+    use super::*;
+
+    #[test]
+    fn test_dog_constructor_minimal_params() {
+        let dog = Dog::new("pupuce".to_string(), Sex::M, None, [].to_vec(), None, None);
+
+        let gql_dog = map_dog_to_gql(dog.clone());
+
+        // WARNING: see later how to properly compare
+        assert_eq!(gql_dog.id.to_value(), Value::String(dog.id.to_string()));
+
+        assert_eq!(gql_dog.name, dog.name);
+        assert_eq!(gql_dog.sex, Sex::M);
+        assert!(gql_dog.races.is_empty());
+        assert_eq!(gql_dog.birthdate, None);
+        assert_eq!(gql_dog.weight, None);
+        assert_eq!(gql_dog.icad_id, None)
+    }
+
+    #[test]
+    fn test_dog_constructor_full_params() {
+        let dog = Dog::new(
+            "pupuce".to_string(),
+            Sex::M,
+            Some(Utc::now()),
+            ["staff".to_string()].to_vec(),
+            Some(100),
+            Some("icad-fake-id".to_string()),
+        );
+
+        let gql_dog = map_dog_to_gql(dog.clone());
+
+        // WARNING: see later how to properly compare
+        assert_eq!(gql_dog.id.to_value(), Value::String(dog.id.to_string()));
+
+        assert_eq!(gql_dog.name, dog.name);
+        assert_eq!(gql_dog.sex, Sex::M);
+        assert_eq!(gql_dog.races, ["staff".to_string()].to_vec());
+        assert_eq!(gql_dog.birthdate, dog.birthdate.map(GraphQLDateTime));
+        assert_eq!(gql_dog.weight, Some(100));
+        assert_eq!(gql_dog.icad_id, Some("icad-fake-id".to_string()))
+    }
+}

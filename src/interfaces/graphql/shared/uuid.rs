@@ -1,7 +1,7 @@
 use async_graphql::{InputValueError, InputValueResult, Scalar, ScalarType, Value};
 use uuid::Uuid;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct GraphQLUuid(pub Uuid);
 
 #[Scalar(name = "UUID")]

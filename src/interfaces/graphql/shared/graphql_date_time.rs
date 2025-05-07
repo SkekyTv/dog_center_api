@@ -2,7 +2,7 @@ use async_graphql::{InputValueError, InputValueResult, Scalar, ScalarType, Value
 use chrono::{DateTime, Utc};
 use std::str::FromStr;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct GraphQLDateTime(pub DateTime<Utc>);
 
 #[Scalar(name = "DateTime")]
