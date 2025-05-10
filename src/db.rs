@@ -1,5 +1,13 @@
 use sqlx::{PgPool, postgres::PgPoolOptions};
 
+pub fn generate_db_url_from_env() -> String {
+    let db_user = std::env::var("POSTGRES_USER").expect("POSTGRES_USER must be set");
+    let db_pdw = std::env::var("POSTGRES_PASSWORD").expect("POSTGRES_PASSWORD must be set");
+    let db_host = std::env::var("POSTGRES_HOST").expect("POSTGRES_HOST must be set");
+    let db_name = std::env::var("POSTGRES_DATABASE").expect("POSTGRES_DATABASE must be set");
+    format!("postgres://{}:{}@{}/{}", db_user, db_pdw, db_host, db_name)
+}
+
 pub async fn init_fb_from_env() -> Result<PgPool, Box<dyn std::error::Error>> {
     let db_user = std::env::var("POSTGRES_USER").expect("POSTGRES_USER must be set");
     let db_pdw = std::env::var("POSTGRES_PASSWORD").expect("POSTGRES_PASSWORD must be set");
@@ -27,7 +35,7 @@ pub async fn init_fb_from_env() -> Result<PgPool, Box<dyn std::error::Error>> {
     } else {
         println!("Database '{}' already exists", db_name);
     }
-    let postgres_url = format!("postgres://{}:{}@{}/{}", db_user, db_pdw, db_host, db_name);
+    let postgres_url = generate_db_url_from_env();
 
     let app_pool = PgPoolOptions::new()
         .max_connections(10)

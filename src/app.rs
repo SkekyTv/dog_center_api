@@ -1,0 +1,54 @@
+use sqlx::{Pool, Postgres};
+use tracing::{error, info};
+
+use crate::{
+    adapters::{graphql_adapter, http_adapter},
+    app_state::AppState,
+};
+
+pub async fn run_app(pool: Pool<Postgres>) -> Result<(), Box<dyn std::error::Error>> {
+    info!("Starting AppState build.");
+    let state = AppState::build(pool).await;
+    info!("AppState builded.");
+
+    // Exécuter les serveurs HTTP et GraphQL en parallèle
+    info!("Starting servers.");
+    // match tokio::try_join!(
+    //     http_adapter::start_http_server(state.clone()),
+    //     graphql_adapter::start_graphql_server(state.clone())
+    // ) {
+    //     Ok(_) => info!("HTTP and GraphQL server started."),
+    //     Err(e) => error!("Fail to start HTTP and GraphQL server: {}", e),
+    // };
+    // Spawn the HTTP server
+    let state_http = state.clone();
+    let http_server = tokio::spawn(async {
+        if let Err(e) = http_adapter::start_http_server(state_http).await {
+            error!("HTTP server failed: {}", e);
+        }
+    });
+
+    // Spawn the GraphQL server
+    let state_graphql = state.clone();
+    let graphql_server = tokio::spawn(async {
+        if let Err(e) = graphql_adapter::start_graphql_server(state_graphql).await {
+            error!("GraphQL server failed: {}", e);
+        }
+    });
+
+    info!("Servers started. Waiting for them to complete...");
+
+    // Await both servers separately
+    let http_result = http_server.await;
+    let graphql_result = graphql_server.await;
+
+    // Handle any errors from the tasks
+    if let Err(e) = http_result {
+        error!("HTTP server panicked: {:?}", e);
+    }
+
+    if let Err(e) = graphql_result {
+        error!("GraphQL server panicked: {:?}", e);
+    }
+    Ok(())
+}

@@ -9,7 +9,7 @@ pub async fn start_http_server(state: AppState) -> Result<(), Box<dyn std::error
     let app = Router::new()
         .route("/api/healthcheck", get(health_check_handler))
         .nest("/api", dogs_routes())
-        .with_state(state);
+        .with_state(state.clone());
 
     let listener = get_listener().await.expect("failed to bind listener");
 
