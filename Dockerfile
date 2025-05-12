@@ -13,7 +13,9 @@ RUN rustup default stable && cargo --version
 # Créer un utilisateur non-root pour plus de sécurité
 RUN useradd -m docker_user && \
   usermod -aG docker docker_user
-USER docker_user
+
+# Donner les permissions nécessaires pour les répertoires GitHub Actions
+RUN chown -R docker_user:docker_user /__w /_temp || true
 
 # Utiliser un répertoire utilisateur pour le cache
 RUN mkdir -p /home/docker_user/cache
@@ -24,4 +26,4 @@ ENV RUSTUP_HOME=/home/docker_user/cache/rustup
 WORKDIR /app
 
 # Commande par défaut (optionnelle)
-CMD ["bash"]
+ENTRYPOINT ["bash"]

@@ -23,6 +23,9 @@ jobs:
       options: --privileged
 
     steps:
+      - name: Check Docker Compose version
+        run: |
+          docker compose version || docker-compose version
       - name: Rustup version
         run: rustup default stable
 
