@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y \
   git \
   docker.io \
   docker-compose \
-  netcat-openbsd \
+  postgresql-client \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Installer le plugin Docker Compose (docker compose intégré)
