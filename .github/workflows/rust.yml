@@ -18,9 +18,14 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: skekyt/rust_ci:latest
+    container:
+      image: skekyt/rust_ci:latest
+      options: --privileged
 
     steps:
+      - name: Rustup version
+        run: rustup default stable
+
       - name: Check out code
         uses: actions/checkout@v4
 
