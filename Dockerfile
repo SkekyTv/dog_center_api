@@ -1,11 +1,17 @@
 FROM rust:latest
 
-# Installer git, docker, et docker-compose
+# Installer git, docker, docker-compose et netcat
 RUN apt-get update && apt-get install -y \
   git \
   docker.io \
   docker-compose \
+  netcat-openbsd \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Installer le plugin Docker Compose (docker compose intégré)
+RUN mkdir -p /usr/lib/docker/cli-plugins && \
+  curl -SL "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-$(uname -m)" -o /usr/lib/docker/cli-plugins/docker-compose && \
+  chmod +x /usr/lib/docker/cli-plugins/docker-compose
 
 # Configurer la version stable de Rust comme toolchain par défaut
 RUN rustup default stable && cargo --version
