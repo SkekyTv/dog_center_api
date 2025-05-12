@@ -11,8 +11,10 @@ services:
       - "5432:5432"
 
 networks:
-  default:
-    driver: bridge
+  # default:
+  #   driver: bridge
+  host:
+    name: host
 
 volumes:
   postgres-data:
