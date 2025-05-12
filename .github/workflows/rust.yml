@@ -33,7 +33,7 @@ jobs:
 
       - name: Start services with Docker Compose
         run: |
-          docker-compose up -d
+          docker compose up -d
           sleep 10 # Wait for the database to initialize
 
       - name: Build
