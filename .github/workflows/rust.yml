@@ -18,14 +18,14 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:17.2-bookworm
-        env:
-          POSTGRES_USER: ${POSTGRES_USER}
-          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-        ports:
-          - "5432:5432"
+    # services:
+    #   postgres:
+    #     image: postgres:17.2-bookworm
+    #     env:
+    #       POSTGRES_USER: ${POSTGRES_USER}
+    #       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    #     ports:
+    #       - "5432:5432"
 
     steps:
       - name: Rustup version
