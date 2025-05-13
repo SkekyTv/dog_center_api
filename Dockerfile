@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y \
   git \
   docker.io \
   docker-compose \
-  postgresql-client \
+  # postgresql-client \ 
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Installer le plugin Docker Compose (docker compose intégré)
@@ -13,8 +13,9 @@ RUN mkdir -p /usr/lib/docker/cli-plugins && \
   curl -SL "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-$(uname -m)" -o /usr/lib/docker/cli-plugins/docker-compose && \
   chmod +x /usr/lib/docker/cli-plugins/docker-compose
 
+# useless
 # Configurer la version stable de Rust comme toolchain par défaut
-RUN rustup default stable && cargo --version
+# RUN rustup default stable && cargo --version
 
 # Créer un utilisateur non-root pour plus de sécurité
 RUN useradd -m docker_user && \

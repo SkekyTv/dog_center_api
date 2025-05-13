@@ -16,34 +16,23 @@ env:
   DATABASE_URL: postgres://dog_center_api:password123@localhost/dog_center
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    container:
-      image: skekyt/rust_ci:latest
-      options: --privileged
+    services:
+      postgres:
+        image: postgres:17.2-bookworm
+        env:
+          POSTGRES_USER: ${POSTGRES_USER}
+          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        ports:
+          - "5432:5432"
 
     steps:
-      - name: Check Docker Compose version
-        run: |
-          docker compose version || docker-compose version
       - name: Rustup version
         run: rustup default stable
 
       - name: Check out code
         uses: actions/checkout@v4
-
-      - name: Start services with Docker Compose
-        run: |
-          docker compose up -d
-      - name: Wait for PostgreSQL
-        run: |
-          #!/bin/bash
-          echo "Waiting for PostgreSQL..."
-          until PGPASSWORD=$POSTGRES_PASSWORD psql -h "postgres" -U "$POSTGRES_USER" -c '\q'; do
-            >&2 echo "PostgreSQL is unavailable - sleeping"
-            sleep 2
-          done
-          echo "PostgreSQL is up and running!"
 
       - name: Build
         run: cargo build --verbose

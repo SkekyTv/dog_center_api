@@ -1,12 +1,30 @@
 name: dog-center-infra
 services:
+  # api:
+  #   image: skekyt/dog_center_api:latest
+  #   environment:
+  #     CARGO_TERM_COLOR: always
+  #     POSTGRES_DATABASE: ${POSTGRES_DATABASE}
+  #     POSTGRES_USER: ${POSTGRES_USER}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #     POSTGRES_HOST: ${POSTGRES_HOST}
+  #     POSTGRES_PORT: ${POSTGRES_PORT}
+  #     DATABASE_URL: ${DATABASE_URL}
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - postgres
+
   postgres:
     image: postgres:17.2-bookworm
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: dog_center_api
-      POSTGRES_PASSWORD: password123
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
 
