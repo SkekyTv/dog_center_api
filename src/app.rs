@@ -13,13 +13,7 @@ pub async fn run_app(pool: Pool<Postgres>) -> Result<(), Box<dyn std::error::Err
 
     // Exécuter les serveurs HTTP et GraphQL en parallèle
     info!("Starting servers.");
-    // match tokio::try_join!(
-    //     http_adapter::start_http_server(state.clone()),
-    //     graphql_adapter::start_graphql_server(state.clone())
-    // ) {
-    //     Ok(_) => info!("HTTP and GraphQL server started."),
-    //     Err(e) => error!("Fail to start HTTP and GraphQL server: {}", e),
-    // };
+
     // Spawn the HTTP server
     let state_http = state.clone();
     let http_server = tokio::spawn(async {

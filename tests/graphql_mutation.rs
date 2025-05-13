@@ -53,6 +53,13 @@ async fn test_graphql_register_dog() {
         .await
         .expect("Failed to parse JSON response");
     let data = response_json.get("data").expect("Missing `data` field");
+    let errors = response_json.get("errors");
+
+    match errors {
+        Some(e) => println!("errors: {}", e),
+        None => println!("no errors"),
+    }
+
     let register_dog = data
         .get("registerDog")
         .expect("Missing `registerDog` field");

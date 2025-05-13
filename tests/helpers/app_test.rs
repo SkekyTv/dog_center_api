@@ -19,7 +19,7 @@ pub async fn set_up_app_test() -> String {
     // Étape 4 : Retourner l'URL de l'application
     let app_url = "http://127.0.0.1:8080".to_string();
 
-    wait_for_server(app_url.as_str(), 10).await;
+    wait_for_server(app_url.as_str(), 30).await;
     info!("Test app started at {}", app_url);
     app_url
 }

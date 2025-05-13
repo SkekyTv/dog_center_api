@@ -7,6 +7,7 @@ on:
     branches: ["develop"]
 
 env:
+  OS: linux
   CARGO_TERM_COLOR: always
   POSTGRES_DATABASE: dog_center
   POSTGRES_USER: dog_center_api
@@ -14,6 +15,8 @@ env:
   POSTGRES_HOST: localhost
   POSTGRES_PORT: 5432
   DATABASE_URL: postgres://dog_center_api:password123@localhost/dog_center
+  HTTP_PORT: 3000
+  GRAPHQL_PORT: 8080
 
 jobs:
   test:
