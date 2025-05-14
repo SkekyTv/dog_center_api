@@ -2,21 +2,43 @@ name: Rust
 
 on:
   push:
-    branches: [ "develop" ]
+    branches: ["develop"]
   pull_request:
-    branches: [ "develop" ]
+    branches: ["develop"]
 
 env:
+  OS: linux
   CARGO_TERM_COLOR: always
+  POSTGRES_DATABASE: dog_center
+  POSTGRES_USER: dog_center_api
+  POSTGRES_PASSWORD: password123
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  DATABASE_URL: postgres://dog_center_api:password123@localhost/dog_center
+  HTTP_PORT: 3000
+  GRAPHQL_PORT: 8080
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
+    # services:
+    #   postgres:
+    #     image: postgres:17.2-bookworm
+    #     env:
+    #       POSTGRES_USER: ${POSTGRES_USER}
+    #       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    #     ports:
+    #       - "5432:5432"
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+      - name: Rustup version
+        run: rustup default stable
+
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: cargo build --verbose
+
+      - name: Run tests
+        run: RUST_BACKTRACE=1 cargo test --verbose

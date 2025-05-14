@@ -5,14 +5,16 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: dog_center_api
-      POSTGRES_PASSWORD: password123
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
 
 networks:
-  default:
-    driver: bridge
+  # default:
+  #   driver: bridge
+  host:
+    name: host
 
 volumes:
   postgres-data:

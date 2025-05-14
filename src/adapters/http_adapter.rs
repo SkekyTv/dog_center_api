@@ -3,16 +3,17 @@ use axum::{Router, routing::get};
 use listenfd::ListenFd;
 use std::net::SocketAddr;
 use tokio::net::TcpListener as TokioTcpListener;
+use tracing::info;
 
 pub async fn start_http_server(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/api/healthcheck", get(health_check_handler))
         .nest("/api", dogs_routes())
-        .with_state(state);
+        .with_state(state.clone());
 
     let listener = get_listener().await.expect("failed to bind listener");
 
-    println!(
+    info!(
         "HTTP Server listening on: {}",
         listener.local_addr().unwrap()
     );
@@ -25,7 +26,7 @@ pub async fn start_http_server(state: AppState) -> Result<(), Box<dyn std::error
 
 async fn get_listener() -> std::io::Result<TokioTcpListener> {
     if let Some(l) = ListenFd::from_env().take_tcp_listener(0).unwrap() {
-        println!("Detected systemfd - using file descriptor FD 3");
+        info!("Detected systemfd - using file descriptor FD 3");
         l.set_nonblocking(true).expect("failed to unblock listener");
         TokioTcpListener::from_std(l)
     } else {

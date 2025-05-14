@@ -1,14 +1,17 @@
 use crate::app_state::AppState;
-use async_graphql::{EmptyMutation, EmptySubscription, Schema};
+use async_graphql::{EmptySubscription, Schema};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::response::{Html, IntoResponse};
 use axum::{Router, extract::Extension, routing::get};
 use listenfd::ListenFd;
 use std::net::SocketAddr;
 use tokio::net::TcpListener as TokioTcpListener;
+use tower_http::cors::{Any, CorsLayer};
+use tracing::{error, info};
 
 // Définir la racine des requêtes GraphQL
 pub struct QueryRoot;
+pub struct MutationRoot;
 
 #[async_graphql::Object]
 impl QueryRoot {
@@ -18,35 +21,47 @@ impl QueryRoot {
 }
 
 // Construire le schéma GraphQL
-fn build_schema(state: AppState) -> Schema<QueryRoot, EmptyMutation, EmptySubscription> {
-    Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
-        .data(state)
-        .finish()
+fn build_schema(state: AppState) -> Schema<QueryRoot, MutationRoot, EmptySubscription> {
+    info!("Starting building GraphQL schema...");
+
+    let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+        .data(state.dogs_service.clone())
+        .finish();
+
+    info!("GraphQL schema built successfully.");
+
+    schema
 }
 
 pub async fn start_graphql_server(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
     let schema = build_schema(state);
+    let cors = CorsLayer::new()
+        .allow_origin(Any) // Permet toutes les origines (à restreindre en production)
+        .allow_methods(Any)
+        .allow_headers(Any);
 
     let app = Router::new()
         .route("/graphql", get(graphql_playground).post(graphql_handler))
-        .layer(Extension(schema));
+        .layer(Extension(schema))
+        .layer(cors);
 
     let listener = get_listener().await.expect("failed to bind listener");
 
-    println!(
+    info!(
         "GraphQL Server listening on: {}",
         listener.local_addr().unwrap()
     );
-    axum::serve(listener, app.into_make_service())
-        .await
-        .unwrap();
+    if let Err(e) = axum::serve(listener, app.into_make_service()).await {
+        error!("An error occured while serving: {}", e);
+        return Err(e.into());
+    }
 
     Ok(())
 }
 
 async fn get_listener() -> std::io::Result<TokioTcpListener> {
     if let Some(l) = ListenFd::from_env().take_tcp_listener(1).unwrap() {
-        println!("Detected systemfd - using file descriptor FD 4");
+        info!("Detected systemfd - using file descriptor FD 4");
         l.set_nonblocking(true).expect("failed to unblock listener");
         TokioTcpListener::from_std(l)
     } else {
@@ -59,7 +74,7 @@ async fn get_listener() -> std::io::Result<TokioTcpListener> {
 
 // Handler pour exécuter des requêtes GraphQL
 async fn graphql_handler(
-    schema: Extension<Schema<QueryRoot, EmptyMutation, EmptySubscription>>,
+    schema: Extension<Schema<QueryRoot, MutationRoot, EmptySubscription>>,
     req: GraphQLRequest,
 ) -> GraphQLResponse {
     schema.execute(req.into_inner()).await.into()

@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use sqlx::PgPool;
+use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::entities::dogs::Dog;
@@ -22,7 +23,7 @@ impl DogsRepository for PgDogsRepository {
     }
 
     async fn create_dog(&self, dog: Dog) -> Result<(), sqlx::Error> {
-        sqlx::query(
+        let result =sqlx::query(
             "INSERT INTO dogs (id, name, birthdate, races, img_url, sex, weight, icad_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         )
             .bind(dog.id)
@@ -34,7 +35,12 @@ impl DogsRepository for PgDogsRepository {
             .bind(dog.weight)
             .bind(dog.icad_id)
         .execute(&self.pool)
-        .await?;
+        .await;
+        match result {
+            Ok(_) => info!("Success"),
+            Err(e) => error!("error create_dog : {}", e),
+        }
+
         Ok(())
     }
 }
