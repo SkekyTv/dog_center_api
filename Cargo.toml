@@ -35,8 +35,8 @@ validator = { version = "0.20.0", features = ["derive"] }
 async-graphql = "7.0.16"
 async-graphql-axum = "7.0.16"
 reqwest = { version = "0.12.15", features = ["json"] }
-testcontainers = "0.24.0"
-testcontainers-modules = { version = "0.12.0", features = [
-  "blocking",
-  "postgres",
-] }
+testcontainers = "0.18.0"
+# testcontainers-modules = { version = "0.12.0", features = [
+#   "blocking",
+#   "postgres",
+# ] }
