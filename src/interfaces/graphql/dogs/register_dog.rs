@@ -9,7 +9,7 @@ use crate::{
     use_cases::dogs_service::DogsService,
 };
 
-use super::{dog_mapper, dogs::DogGQL};
+use super::{dog_mapper, dogs_types::DogGQL};
 
 #[derive(InputObject)]
 pub struct RegisterDogInput {

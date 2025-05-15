@@ -3,7 +3,7 @@ use crate::{
     interfaces::graphql::shared::{graphql_date_time::GraphQLDateTime, uuid::GraphQLUuid},
 };
 
-use super::dogs::DogGQL;
+use super::dogs_types::DogGQL;
 
 pub fn map_dog_to_gql(dog: Dog) -> DogGQL {
     DogGQL {
