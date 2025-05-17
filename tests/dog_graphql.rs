@@ -21,7 +21,7 @@ async fn get_app() -> &'static TestSetup {
 }
 
 #[tokio::test]
-async fn test_graphql_register_dog_and_read_on_id() {
+async fn test_graphql_register_dog() {
     let app = get_app().await;
     let app_url = app.app_url.clone();
 
@@ -90,7 +90,7 @@ async fn test_graphql_register_dog_and_read_on_id() {
 }
 
 #[tokio::test]
-async fn query_dog() {
+async fn test_graphql_query_dog() {
     let app = get_app().await;
     let app_url = app.app_url.clone();
     let pool = app.db_pool.clone();
