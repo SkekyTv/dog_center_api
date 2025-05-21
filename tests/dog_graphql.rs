@@ -13,7 +13,6 @@ use tokio::sync::OnceCell;
 mod helpers;
 
 // TODO: Wrap these in helpers function
-
 static APP: OnceCell<TestSetup> = OnceCell::const_new();
 
 async fn get_app() -> &'static TestSetup {

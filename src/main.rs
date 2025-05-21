@@ -1,4 +1,8 @@
-use dog_center_api::{app::run_app, db::init_fb_from_env};
+use dog_center_api::{
+    adapters::{graphql_adapter, http_adapter},
+    app::run_app,
+    db::init_fb_from_env,
+};
 use dotenv::dotenv;
 use tracing::{error, info};
 use tracing_subscriber::fmt;
@@ -22,5 +26,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    run_app(pool).await
+    let http_listener = http_adapter::get_listener().await.unwrap();
+
+    let graphql_listener = graphql_adapter::get_listener().await.unwrap();
+
+    run_app(pool, http_listener, graphql_listener).await
 }

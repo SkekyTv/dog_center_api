@@ -1,4 +1,5 @@
 use sqlx::{Pool, Postgres};
+use tokio::net::TcpListener as TokioTcpListener;
 use tracing::{error, info};
 
 use crate::{
@@ -6,7 +7,11 @@ use crate::{
     app_state::AppState,
 };
 
-pub async fn run_app(pool: Pool<Postgres>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn run_app(
+    pool: Pool<Postgres>,
+    http_listener: TokioTcpListener,
+    graphql_listener: TokioTcpListener,
+) -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting AppState build.");
     let state = AppState::build(pool).await;
     info!("AppState builded.");
@@ -17,7 +22,7 @@ pub async fn run_app(pool: Pool<Postgres>) -> Result<(), Box<dyn std::error::Err
     // Spawn the HTTP server
     let state_http = state.clone();
     let http_server = tokio::spawn(async {
-        if let Err(e) = http_adapter::start_http_server(state_http).await {
+        if let Err(e) = http_adapter::start_http_server(state_http, http_listener).await {
             error!("HTTP server failed: {}", e);
         }
     });
@@ -25,7 +30,8 @@ pub async fn run_app(pool: Pool<Postgres>) -> Result<(), Box<dyn std::error::Err
     // Spawn the GraphQL server
     let state_graphql = state.clone();
     let graphql_server = tokio::spawn(async {
-        if let Err(e) = graphql_adapter::start_graphql_server(state_graphql).await {
+        if let Err(e) = graphql_adapter::start_graphql_server(state_graphql, graphql_listener).await
+        {
             error!("GraphQL server failed: {}", e);
         }
     });

@@ -1,9 +1,14 @@
+use std::net::SocketAddr;
+
 use super::db::setup_test_postgres;
 use dotenv::dotenv;
 
 use dog_center_api::app::run_app;
 use sqlx::{Pool, Postgres};
 use tokio::time::{Duration, sleep};
+
+use tokio::net::TcpListener as TokioTcpListener;
+
 use tracing::info;
 
 pub struct TestSetup {
@@ -15,22 +20,32 @@ pub async fn set_up_app_test() -> TestSetup {
     dotenv().ok();
     info!("Env var loaded.");
     let pool = setup_test_postgres().await;
+    // Bind a random free port
+    // === REST listener ===
+    let rest_host = "127.0.0.1:0".to_string();
+    let rest_addr: SocketAddr = rest_host.parse().unwrap();
+    let rest_tokio_listener = TokioTcpListener::bind(rest_addr).await.unwrap();
+    let rest_url = format!("http://{}", rest_tokio_listener.local_addr().unwrap());
+
+    // === GraphQL listener ===
+    let graphql_host = "127.0.0.1:0".to_string();
+    let addr: SocketAddr = graphql_host.parse().unwrap();
+    let graphql_tokio_listener = TokioTcpListener::bind(addr).await.unwrap();
+    let graphql_url = format!("http://{}", graphql_tokio_listener.local_addr().unwrap());
 
     let app_pool = pool.clone();
     tokio::spawn(async move {
-        if let Err(e) = run_app(app_pool).await {
+        if let Err(e) = run_app(app_pool, rest_tokio_listener, graphql_tokio_listener).await {
             eprintln!("Test app failed to run: {:?}", e);
         }
     });
 
-    // Étape 4 : Retourner l'URL de l'application
-    let app_url = "http://127.0.0.1:8080".to_string();
-
-    wait_for_server(app_url.as_str(), 30).await;
-    info!("Test app started at {}", app_url);
+    wait_for_server(&graphql_url.as_str(), 30).await;
+    info!("Test graphql app started at {}", graphql_url);
+    info!("Test rest app started at {}", rest_url);
 
     TestSetup {
-        app_url,
+        app_url: graphql_url,
         db_pool: pool,
     }
 }

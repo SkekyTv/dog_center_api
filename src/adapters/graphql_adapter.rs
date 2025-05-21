@@ -36,7 +36,10 @@ fn build_schema(state: AppState) -> Schema<QueryRoot, MutationRoot, EmptySubscri
     schema
 }
 
-pub async fn start_graphql_server(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_graphql_server(
+    state: AppState,
+    listener: TokioTcpListener,
+) -> Result<(), Box<dyn std::error::Error>> {
     let schema = build_schema(state);
     let cors = CorsLayer::new()
         .allow_origin(Any) // WARNING: Permet toutes les origines (à restreindre en production)
@@ -48,7 +51,7 @@ pub async fn start_graphql_server(state: AppState) -> Result<(), Box<dyn std::er
         .layer(Extension(schema))
         .layer(cors);
 
-    let listener = get_listener().await.expect("failed to bind listener");
+    // let listener = get_listener().await.expect("failed to bind listener");
 
     info!(
         "GraphQL Server listening on: {}",
@@ -62,7 +65,7 @@ pub async fn start_graphql_server(state: AppState) -> Result<(), Box<dyn std::er
     Ok(())
 }
 
-async fn get_listener() -> std::io::Result<TokioTcpListener> {
+pub async fn get_listener() -> std::io::Result<TokioTcpListener> {
     if let Some(l) = ListenFd::from_env().take_tcp_listener(1).unwrap() {
         info!("Detected systemfd - using file descriptor FD 4");
         l.set_nonblocking(true).expect("failed to unblock listener");
