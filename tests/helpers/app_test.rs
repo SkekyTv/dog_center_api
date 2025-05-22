@@ -5,6 +5,7 @@ use dotenv::dotenv;
 
 use dog_center_api::app::run_app;
 use sqlx::{Pool, Postgres};
+use testcontainers::{ContainerAsync, GenericImage};
 use tokio::time::{Duration, sleep};
 
 use tokio::net::TcpListener as TokioTcpListener;
@@ -14,12 +15,19 @@ use tracing::info;
 pub struct TestSetup {
     pub app_url: String,
     pub db_pool: Pool<Postgres>,
+    pub _container: ContainerAsync<GenericImage>,
+}
+
+impl Drop for TestSetup {
+    fn drop(&mut self) {
+        info!("Dropping TestSetup, stopping container")
+    }
 }
 
 pub async fn set_up_app_test() -> TestSetup {
     dotenv().ok();
     info!("Env var loaded.");
-    let pool = setup_test_postgres().await;
+    let pg_setup = setup_test_postgres().await;
     // Bind a random free port
     // === REST listener ===
     let rest_host = "127.0.0.1:0".to_string();
@@ -33,7 +41,7 @@ pub async fn set_up_app_test() -> TestSetup {
     let graphql_tokio_listener = TokioTcpListener::bind(addr).await.unwrap();
     let graphql_url = format!("http://{}", graphql_tokio_listener.local_addr().unwrap());
 
-    let app_pool = pool.clone();
+    let app_pool = pg_setup.pool.clone();
     tokio::spawn(async move {
         if let Err(e) = run_app(app_pool, rest_tokio_listener, graphql_tokio_listener).await {
             eprintln!("Test app failed to run: {:?}", e);
@@ -46,7 +54,8 @@ pub async fn set_up_app_test() -> TestSetup {
 
     TestSetup {
         app_url: graphql_url,
-        db_pool: pool,
+        db_pool: pg_setup.pool,
+        _container: pg_setup._container,
     }
 }
 

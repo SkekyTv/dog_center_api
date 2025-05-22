@@ -2,26 +2,17 @@ use dog_center_api::entities::dogs::Dog;
 use dog_center_api::infra::db::dogs_repository::PgDogsRepository;
 use dog_center_api::shared::types::sex::Sex;
 use dog_center_api::use_cases::dogs_service::DogsService;
-use helpers::app_test::TestSetup;
 use helpers::app_test::set_up_app_test;
 use reqwest::Client;
 use reqwest::StatusCode;
 use serde_json::Value;
 use serde_json::json;
-use tokio::sync::OnceCell;
 
 mod helpers;
 
-// TODO: Wrap these in helpers function
-static APP: OnceCell<TestSetup> = OnceCell::const_new();
-
-async fn get_app() -> &'static TestSetup {
-    APP.get_or_init(|| async { set_up_app_test().await }).await
-}
-
 #[tokio::test]
 async fn test_graphql_register_dog() {
-    let app = get_app().await;
+    let app = set_up_app_test().await;
     let app_url = app.app_url.clone();
 
     let client = Client::new();
@@ -90,7 +81,7 @@ async fn test_graphql_register_dog() {
 
 #[tokio::test]
 async fn test_graphql_query_dog() {
-    let app = get_app().await;
+    let app = set_up_app_test().await;
     let app_url = app.app_url.clone();
     let pool = app.db_pool.clone();
 
@@ -117,8 +108,7 @@ async fn test_graphql_query_dog() {
             "id": dog_id
         }
     });
-    let query = json!({
-        "query": r#"
+    let query = r#"
             query GetDog($input: DogInput!) {
                 dog(input: $input) {
                     id
@@ -128,8 +118,7 @@ async fn test_graphql_query_dog() {
                     races
                   }
             }
-        "#,
-    });
+        "#;
 
     let payload = json!({
         "query": query,
@@ -137,22 +126,23 @@ async fn test_graphql_query_dog() {
     });
 
     let response = client
-        .get(format!("{}/graphql", app_url))
+        .post(format!("{}/graphql", app_url))
         .json(&payload)
         .send()
         .await
         .expect("Failed to send request");
+    let status = response.status();
+    let text = response.text().await.unwrap_or_default();
 
-    assert_eq!(response.status(), StatusCode::OK);
+    if !status.is_success() {
+        panic!("Response status is not success: {}\nBody: {}", status, text);
+    }
 
-    assert!(
-        response.status().is_success(),
-        "Response status is not success"
-    );
-    let response_json: Value = response
-        .json()
-        .await
-        .expect("Failed to parse JSON response");
+    // Ensuite, si tu veux parser le JSON :
+    let response_json: Value = serde_json::from_str(&text).expect("Failed to parse JSON response");
+
+    assert_eq!(status, StatusCode::OK);
+
     let data = response_json.get("data").expect("Missing `data` field");
     let errors = response_json.get("errors");
 
@@ -160,7 +150,7 @@ async fn test_graphql_query_dog() {
 
     let dog = data.get("dog").expect("Missing `dog` field");
 
-    assert_eq!(dog.get("name").unwrap(), "Pupuce");
+    assert_eq!(dog.get("name").unwrap(), "panda");
     assert_eq!(dog.get("sex").unwrap(), "F");
-    assert_eq!(dog.get("races").unwrap(), &json!(["Border Collie"]));
+    assert_eq!(dog.get("races").unwrap(), &json!(["caniche"]));
 }

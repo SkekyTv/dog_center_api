@@ -3,9 +3,13 @@ use sqlx::{Pool, Postgres};
 use std::time::Duration;
 use testcontainers::core::ContainerPort;
 use testcontainers::runners::AsyncRunner;
-use testcontainers::{GenericImage, ImageExt};
+use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 
-pub async fn setup_test_postgres() -> Pool<Postgres> {
+pub struct PgSetup {
+    pub pool: Pool<Postgres>,
+    pub _container: ContainerAsync<GenericImage>,
+}
+pub async fn setup_test_postgres() -> PgSetup {
     // Configuration de l'image PostgreSQL
     let db_user = std::env::var("POSTGRES_USER").expect("POSTGRES_USER must be set");
     let db_pdw = std::env::var("POSTGRES_PASSWORD").expect("POSTGRES_PASSWORD must be set");
@@ -41,6 +45,22 @@ pub async fn setup_test_postgres() -> Pool<Postgres> {
         .await
         .expect("Failed to connect to PostgreSQL");
 
+    // let mut tries = 0;
+    // let pool = loop {
+    //     match PoolOptions::<Postgres>::new()
+    //         .max_connections(30)
+    //         .min_connections(5)
+    //         .connect(&connection_string)
+    //         .await
+    //     {
+    //         Ok(pool) => break pool,
+    //         Err(_e) if tries < 10 => {
+    //             tries += 1;
+    //             tokio::time::sleep(Duration::from_secs(1)).await;
+    //         }
+    //         Err(e) => panic!("Failed to connect to PostgreSQL: {}", e),
+    //     }
+    // };
     // Appliquer les migrations (si nécessaire)
     sqlx::migrate!()
         .run(&pool)
@@ -49,5 +69,8 @@ pub async fn setup_test_postgres() -> Pool<Postgres> {
 
     tokio::time::sleep(Duration::from_secs(5)).await;
 
-    pool
+    PgSetup {
+        pool,
+        _container: container,
+    }
 }
