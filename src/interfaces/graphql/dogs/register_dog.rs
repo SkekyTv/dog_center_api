@@ -3,13 +3,14 @@ use std::sync::Arc;
 use async_graphql::{Context, Error, InputObject, Object};
 
 use crate::{
-    adapters::graphql_adapter::MutationRoot, entities::dogs::Dog,
-    infra::db::dogs_repository::PgDogsRepository,
+    entities::dogs::Dog, infra::db::dogs_repository::PgDogsRepository,
     interfaces::graphql::shared::graphql_date_time::GraphQLDateTime, shared::types::sex::Sex,
     use_cases::dogs_service::DogsService,
 };
 
-use super::{dog_mapper, dogs::DogGQL};
+use super::{dog_mapper, dogs_types::DogGQL};
+
+pub struct DogMutation;
 
 #[derive(InputObject)]
 pub struct RegisterDogInput {
@@ -23,7 +24,7 @@ pub struct RegisterDogInput {
 }
 
 #[Object]
-impl MutationRoot {
+impl DogMutation {
     pub async fn register_dog(
         &self,
         ctx: &Context<'_>,
@@ -48,5 +49,11 @@ impl MutationRoot {
             .map_err(|e| Error::new(format!("Error creating dog: {}", e)))?;
 
         Ok(dog_mapper::map_dog_to_gql(new_dog))
+    }
+}
+
+impl Default for DogMutation {
+    fn default() -> Self {
+        DogMutation
     }
 }

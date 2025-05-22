@@ -1,5 +1,8 @@
 use crate::app_state::AppState;
-use async_graphql::{EmptySubscription, Schema};
+use crate::interfaces::graphql::dogs::dog::DogQuery;
+use crate::interfaces::graphql::dogs::register_dog::DogMutation;
+use crate::interfaces::graphql::healthcheck::HealthCheckQuery;
+use async_graphql::{EmptySubscription, MergedObject, Schema};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::response::{Html, IntoResponse};
 use axum::{Router, extract::Extension, routing::get};
@@ -10,33 +13,36 @@ use tower_http::cors::{Any, CorsLayer};
 use tracing::{error, info};
 
 // Définir la racine des requêtes GraphQL
-pub struct QueryRoot;
-pub struct MutationRoot;
+#[derive(MergedObject, Default)]
+pub struct QueryRoot(DogQuery, HealthCheckQuery);
 
-#[async_graphql::Object]
-impl QueryRoot {
-    async fn health_check(&self) -> &str {
-        "GraphQL API is running"
-    }
-}
+#[derive(MergedObject, Default)]
+pub struct MutationRoot(DogMutation);
 
 // Construire le schéma GraphQL
 fn build_schema(state: AppState) -> Schema<QueryRoot, MutationRoot, EmptySubscription> {
     info!("Starting building GraphQL schema...");
 
-    let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
-        .data(state.dogs_service.clone())
-        .finish();
+    let schema = Schema::build(
+        QueryRoot::default(),
+        MutationRoot::default(),
+        EmptySubscription,
+    )
+    .data(state.dogs_service.clone())
+    .finish();
 
     info!("GraphQL schema built successfully.");
 
     schema
 }
 
-pub async fn start_graphql_server(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_graphql_server(
+    state: AppState,
+    listener: TokioTcpListener,
+) -> Result<(), Box<dyn std::error::Error>> {
     let schema = build_schema(state);
     let cors = CorsLayer::new()
-        .allow_origin(Any) // Permet toutes les origines (à restreindre en production)
+        .allow_origin(Any) // WARNING: Permet toutes les origines (à restreindre en production)
         .allow_methods(Any)
         .allow_headers(Any);
 
@@ -45,7 +51,7 @@ pub async fn start_graphql_server(state: AppState) -> Result<(), Box<dyn std::er
         .layer(Extension(schema))
         .layer(cors);
 
-    let listener = get_listener().await.expect("failed to bind listener");
+    // let listener = get_listener().await.expect("failed to bind listener");
 
     info!(
         "GraphQL Server listening on: {}",
@@ -59,7 +65,7 @@ pub async fn start_graphql_server(state: AppState) -> Result<(), Box<dyn std::er
     Ok(())
 }
 
-async fn get_listener() -> std::io::Result<TokioTcpListener> {
+pub async fn get_listener() -> std::io::Result<TokioTcpListener> {
     if let Some(l) = ListenFd::from_env().take_tcp_listener(1).unwrap() {
         info!("Detected systemfd - using file descriptor FD 4");
         l.set_nonblocking(true).expect("failed to unblock listener");
