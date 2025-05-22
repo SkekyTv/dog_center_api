@@ -43,4 +43,26 @@ impl DogsRepository for PgDogsRepository {
 
         Ok(())
     }
+
+    async fn update_dog(&self, dog: Dog) -> Result<(), sqlx::Error> {
+        let result = sqlx::query(
+            "UPDATE dogs SET name = ?, birthdate = ?, races = ?, img_url = ?, sex = ?, weight = ?, icad_id= ? WHERE id = ?"
+            )
+            .bind(dog.name)
+            .bind(dog.birthdate)
+            .bind(dog.races)
+            .bind(dog.img_url)
+            .bind(dog.sex)
+            .bind(dog.weight)
+            .bind(dog.icad_id)
+            .bind(dog.id)
+            .execute(&self.pool)
+            .await;
+        match result {
+            Ok(_) => info!("Success"),
+            Err(e) => error!("error update_dog : {}", e),
+        }
+
+        Ok(())
+    }
 }

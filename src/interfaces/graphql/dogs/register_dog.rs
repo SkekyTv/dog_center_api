@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_graphql::{Context, Error, InputObject, Object};
+use async_graphql::{Context, Error, InputObject};
 
 use crate::{
     entities::dogs::Dog, infra::db::dogs_repository::PgDogsRepository,
@@ -9,8 +9,6 @@ use crate::{
 };
 
 use super::{dog_mapper, dogs_types::DogGQL};
-
-pub struct DogMutation;
 
 #[derive(InputObject)]
 pub struct RegisterDogInput {
@@ -23,37 +21,24 @@ pub struct RegisterDogInput {
     pub icad_id: Option<String>,
 }
 
-#[Object]
-impl DogMutation {
-    pub async fn register_dog(
-        &self,
-        ctx: &Context<'_>,
-        input: RegisterDogInput,
-    ) -> Result<DogGQL, Error> {
-        let dogs_service = ctx
-            .data::<Arc<DogsService<PgDogsRepository>>>()
-            .map_err(|_| Error::new("DogsService not found in context"))?;
+pub async fn register_dog(ctx: &Context<'_>, input: RegisterDogInput) -> Result<DogGQL, Error> {
+    let dogs_service = ctx
+        .data::<Arc<DogsService<PgDogsRepository>>>()
+        .map_err(|_| Error::new("DogsService not found in context"))?;
 
-        let new_dog = Dog::new(
-            input.name,
-            input.sex,
-            input.birthdate.map(|dt| dt.0),
-            input.races,
-            input.weight,
-            input.icad_id,
-        );
+    let new_dog = Dog::new(
+        input.name,
+        input.sex,
+        input.birthdate.map(|dt| dt.0),
+        input.races,
+        input.weight,
+        input.icad_id,
+    );
 
-        dogs_service
-            .create_dog(new_dog.clone())
-            .await
-            .map_err(|e| Error::new(format!("Error creating dog: {}", e)))?;
+    dogs_service
+        .create_dog(new_dog.clone())
+        .await
+        .map_err(|e| Error::new(format!("Error creating dog: {}", e)))?;
 
-        Ok(dog_mapper::map_dog_to_gql(new_dog))
-    }
-}
-
-impl Default for DogMutation {
-    fn default() -> Self {
-        DogMutation
-    }
+    Ok(dog_mapper::map_dog_to_gql(new_dog))
 }
