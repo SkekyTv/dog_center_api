@@ -154,3 +154,126 @@ async fn test_graphql_query_dog() {
     assert_eq!(dog.get("sex").unwrap(), "F");
     assert_eq!(dog.get("races").unwrap(), &json!(["caniche"]));
 }
+
+#[tokio::test]
+async fn test_graphql_update_dog_name_only() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let pool = app.db_pool.clone();
+    let client = Client::new();
+
+    let repo = PgDogsRepository { pool: pool.clone() };
+    let dog_service = DogsService::new(repo);
+
+    let dog = Dog::new(
+        "Rex".to_string(),
+        Sex::M,
+        None,
+        vec!["Labrador".to_string()],
+        Some(10),
+        None,
+    );
+
+    dog_service
+        .create_dog(dog.clone())
+        .await
+        .expect("Dog creation failed");
+
+    let dog_id = dog.id;
+
+    let mutation = r#"
+        mutation updateDog($input: UpdateDogInput!) {
+            updateDog(input: $input) {
+                id
+                name
+                sex
+                races
+            }
+        }
+    "#;
+
+    let variables = json!({
+        "input": {
+            "id": dog_id,
+            "name": "Rexy"
+        }
+    });
+
+    let payload = json!({
+        "query": mutation,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(response.status().is_success());
+
+    let body: Value = response.json().await.expect("Invalid JSON response");
+    let errors = body.get("errors");
+    if let Some(e) = errors {
+        panic!("GraphQL returned errors: {}", e);
+    }
+
+    let updated = body
+        .pointer("/data/updateDog")
+        .expect("Missing `updateDog`");
+
+    assert_eq!(updated.get("name").unwrap(), "Rexy");
+    assert_eq!(updated.get("sex").unwrap(), "M");
+    assert_eq!(updated.get("races").unwrap(), &json!(["Labrador"]));
+}
+
+#[tokio::test]
+async fn test_graphql_update_dog_not_found() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let client = Client::new();
+
+    let fake_id = uuid::Uuid::new_v4();
+
+    let mutation = r#"
+        mutation updateDog($input: UpdateDogInput!) {
+            updateDog(input: $input) {
+                id
+                name
+            }
+        }
+    "#;
+
+    let variables = json!({
+        "input": {
+            "id": fake_id,
+            "name": "Ghost"
+        }
+    });
+
+    let payload = json!({
+        "query": mutation,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(response.status().is_success());
+
+    let body: Value = response.json().await.expect("Invalid JSON response");
+
+    let errors = body.get("errors").expect("Expected GraphQL errors");
+    let message = errors[0].get("message").unwrap().as_str().unwrap();
+
+    assert!(
+        message.contains("not found") || message.contains("NotFound"),
+        "Expected 'not found' error, got: {}",
+        message
+    );
+}
