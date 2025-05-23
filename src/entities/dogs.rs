@@ -14,6 +14,7 @@ pub struct Dog {
     pub img_url: Option<String>, // unimplemented!()
     pub sex: Sex,
     pub icad_id: Option<String>,
+    pub desactivated_at: Option<DateTime<Utc>>,
 }
 
 impl Dog {
@@ -34,6 +35,7 @@ impl Dog {
             img_url: None,
             weight,
             icad_id,
+            desactivated_at: None,
         }
     }
 
@@ -64,12 +66,26 @@ impl Dog {
                 Some(inner) => inner,
                 None => self.icad_id.clone(),
             },
+            desactivated_at: self.desactivated_at,
         }
+    }
+
+    pub fn toggle_activation_status(&self) -> Self {
+        let mut dog = self.clone();
+
+        dog.desactivated_at = match self.desactivated_at {
+            Some(_) => None,
+            None => Some(Utc::now()),
+        };
+
+        dog
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::{thread::sleep, time::Duration};
+
     use super::*;
 
     #[test]
@@ -203,5 +219,61 @@ mod tests {
 
         assert_eq!(updated.birthdate, existing_birthdate); // inchangé
         assert_eq!(updated.name, "Fidou");
+    }
+
+    #[test]
+    fn toggles_from_none_to_some() {
+        let dog = Dog::new(
+            "Bella".to_string(),
+            Sex::F,
+            None,
+            vec!["Border Collie".to_string()],
+            None,
+            None,
+        );
+        let toggled = dog.toggle_activation_status();
+
+        assert!(dog.desactivated_at.is_none());
+        assert!(toggled.desactivated_at.is_some());
+
+        // Vérifie que la date est proche de maintenant (tolérance faible)
+        let now = Utc::now();
+        assert!(toggled.desactivated_at.unwrap() <= now);
+    }
+
+    #[test]
+    fn toggles_from_some_to_none() {
+        let dog = Dog::new(
+            "Bella".to_string(),
+            Sex::F,
+            None,
+            vec!["Border Collie".to_string()],
+            None,
+            None,
+        );
+
+        let toggled_to_some = dog.toggle_activation_status();
+        sleep(Duration::from_millis(10));
+
+        let toggled_to_none = toggled_to_some.toggle_activation_status();
+
+        assert!(toggled_to_some.desactivated_at.is_some());
+        assert!(toggled_to_none.desactivated_at.is_none());
+    }
+
+    #[test]
+    fn toggle_is_idempotent_over_two_calls() {
+        let dog = Dog::new(
+            "Bella".to_string(),
+            Sex::F,
+            None,
+            vec!["Border Collie".to_string()],
+            None,
+            None,
+        );
+        let toggled = dog.toggle_activation_status();
+        let toggled_back = toggled.toggle_activation_status();
+
+        assert_eq!(dog.desactivated_at, toggled_back.desactivated_at);
     }
 }

@@ -15,7 +15,7 @@ pub struct PgDogsRepository {
 impl DogsRepository for PgDogsRepository {
     async fn get_dog(&self, id: Uuid) -> Result<Option<Dog>, sqlx::Error> {
         sqlx::query_as::<_, Dog>(
-            "SELECT id::Uuid, name::Text, birthdate, races, img_url, sex, weight, icad_id FROM dogs WHERE id = $1",
+            "SELECT id::Uuid, name::Text, birthdate, races, img_url, sex, weight, icad_id, desactivated_at FROM dogs WHERE id = $1",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -46,7 +46,7 @@ impl DogsRepository for PgDogsRepository {
 
     async fn update_dog(&self, dog: Dog) -> Result<(), sqlx::Error> {
         let result = sqlx::query(
-            "UPDATE dogs SET name = ?, birthdate = ?, races = ?, img_url = ?, sex = ?, weight = ?, icad_id= ? WHERE id = ?"
+            "UPDATE dogs SET name = $1, birthdate = $2, races = $3, img_url = $4, sex = $5, weight = $6, icad_id= $7 WHERE id = $8"
             )
             .bind(dog.name)
             .bind(dog.birthdate)
@@ -61,6 +61,21 @@ impl DogsRepository for PgDogsRepository {
         match result {
             Ok(_) => info!("Success"),
             Err(e) => error!("error update_dog : {}", e),
+        }
+
+        Ok(())
+    }
+
+    async fn toggle_activation_status(&self, dog: Dog) -> Result<(), sqlx::Error> {
+        let result = sqlx::query("UPDATE dogs SET desactivated_at = $1 WHERE id = $2")
+            .bind(dog.desactivated_at)
+            .bind(dog.id)
+            .execute(&self.pool)
+            .await;
+
+        match result {
+            Ok(_) => info!("Success"),
+            Err(e) => error!("error toogle_activation_status : {}", e),
         }
 
         Ok(())

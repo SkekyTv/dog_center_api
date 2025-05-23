@@ -70,4 +70,27 @@ impl<T: DogsRepository> DogsService<T> {
             Err(e) => Err(e),
         }
     }
+
+    pub async fn toggle_activation_status(&self, id: Uuid) -> Result<Dog, DogServiceError> {
+        let dog = self
+            .repo
+            .get_dog(id)
+            .await?
+            .ok_or(DogServiceError::NotFound)?;
+
+        println!("Dog read: {:?}", dog);
+        let toggled_dog = dog.toggle_activation_status();
+        println!("toggled dog: {:?}", toggled_dog);
+
+        let repo_result = self
+            .repo
+            .toggle_activation_status(toggled_dog.clone())
+            .await
+            .map_err(DogServiceError::from);
+
+        match repo_result {
+            Ok(_) => Ok(toggled_dog),
+            Err(e) => Err(e),
+        }
+    }
 }

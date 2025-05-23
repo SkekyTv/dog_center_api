@@ -10,6 +10,7 @@ use serde_json::json;
 
 mod helpers;
 
+// registerDog
 #[tokio::test]
 async fn test_graphql_register_dog() {
     let app = set_up_app_test().await;
@@ -79,6 +80,7 @@ async fn test_graphql_register_dog() {
     );
 }
 
+// query dog
 #[tokio::test]
 async fn test_graphql_query_dog() {
     let app = set_up_app_test().await;
@@ -155,6 +157,7 @@ async fn test_graphql_query_dog() {
     assert_eq!(dog.get("races").unwrap(), &json!(["caniche"]));
 }
 
+// dog update
 #[tokio::test]
 async fn test_graphql_update_dog_name_only() {
     let app = set_up_app_test().await;
@@ -249,6 +252,199 @@ async fn test_graphql_update_dog_not_found() {
         "input": {
             "id": fake_id,
             "name": "Ghost"
+        }
+    });
+
+    let payload = json!({
+        "query": mutation,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(response.status().is_success());
+
+    let body: Value = response.json().await.expect("Invalid JSON response");
+
+    let errors = body.get("errors").expect("Expected GraphQL errors");
+    let message = errors[0].get("message").unwrap().as_str().unwrap();
+
+    assert!(
+        message.contains("not found") || message.contains("NotFound"),
+        "Expected 'not found' error, got: {}",
+        message
+    );
+}
+
+// dog activation status
+#[tokio::test]
+async fn test_graphql_toggle_dog_activation_status_desactivate() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let pool = app.db_pool.clone();
+    let client = Client::new();
+
+    let repo = PgDogsRepository { pool: pool.clone() };
+    let dog_service = DogsService::new(repo);
+
+    let dog = Dog::new(
+        "Rex".to_string(),
+        Sex::M,
+        None,
+        vec!["Labrador".to_string()],
+        Some(10),
+        None,
+    );
+
+    dog_service
+        .create_dog(dog.clone())
+        .await
+        .expect("Dog creation failed");
+
+    let dog_id = dog.id;
+
+    let mutation = r#"
+        mutation toggleDogActivationStatus($input: ToggleDogActivationStatusInput!) {
+            toggleDogActivationStatus(input: $input) {
+                id
+                desactivationStatus
+            }
+        }
+        "#;
+
+    let variables = json!({
+        "input": {
+            "id": dog_id,
+        }
+    });
+
+    let payload = json!({
+        "query": mutation,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(response.status().is_success());
+
+    let body: Value = response.json().await.expect("Invalid JSON response");
+    let errors = body.get("errors");
+    if let Some(e) = errors {
+        panic!("GraphQL returned errors: {}", e);
+    }
+
+    let updated = body
+        .pointer("/data/toggleDogActivationStatus")
+        .expect("Missing `toggleDogActivationStatus`");
+
+    assert_eq!(updated.get("desactivationStatus").unwrap(), &json!(true));
+}
+
+#[tokio::test]
+async fn test_graphql_toggle_dog_activation_status_reactivate() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let pool = app.db_pool.clone();
+    let client = Client::new();
+
+    let repo = PgDogsRepository { pool: pool.clone() };
+    let dog_service = DogsService::new(repo);
+
+    let dog = Dog::new(
+        "Rex".to_string(),
+        Sex::M,
+        None,
+        vec!["Labrador".to_string()],
+        Some(10),
+        None,
+    );
+
+    dog_service
+        .create_dog(dog.clone())
+        .await
+        .expect("Dog creation failed");
+
+    let toogled_dog = dog_service
+        .toggle_activation_status(dog.id)
+        .await
+        .expect("Dog toggle activation failed");
+
+    assert!(toogled_dog.desactivated_at.is_some());
+
+    let dog_id = dog.id;
+
+    let mutation = r#"
+        mutation toggleDogActivationStatus($input: ToggleDogActivationStatusInput!) {
+            toggleDogActivationStatus(input: $input) {
+                id
+                desactivationStatus
+            }
+        }
+        "#;
+
+    let variables = json!({
+        "input": {
+            "id": dog_id,
+        }
+    });
+
+    let payload = json!({
+        "query": mutation,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(response.status().is_success());
+
+    let body: Value = response.json().await.expect("Invalid JSON response");
+    let errors = body.get("errors");
+    if let Some(e) = errors {
+        panic!("GraphQL returned errors: {}", e);
+    }
+
+    let updated = body
+        .pointer("/data/toggleDogActivationStatus")
+        .expect("Missing `toggleDogActivationStatus`");
+
+    assert_eq!(updated.get("desactivationStatus").unwrap(), &json!(false));
+}
+
+#[tokio::test]
+async fn test_graphql_toggle_dog_activation_status_not_found() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let client = Client::new();
+
+    let fake_id = uuid::Uuid::new_v4();
+
+    let mutation = r#"
+        mutation toggleDogActivationStatus($input: ToggleDogActivationStatusInput!) {
+            toggleDogActivationStatus(input: $input) {
+                id
+                desactivationStatus
+            }
+        }
+        "#;
+
+    let variables = json!({
+        "input": {
+            "id": fake_id,
         }
     });
 

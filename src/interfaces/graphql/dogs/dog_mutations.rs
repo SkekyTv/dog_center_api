@@ -3,6 +3,9 @@ use async_graphql::{Context, Error, Object};
 
 use super::{
     register_dog::{RegisterDogInput, register_dog},
+    toggle_dog_activation_status::{
+        GqlToggleDogActivationStatusInput, toggle_dog_activation_status,
+    },
     update_dog::{GqlUpdateDogInput, update_dog},
 };
 
@@ -24,6 +27,14 @@ impl DogMutation {
         input: GqlUpdateDogInput,
     ) -> Result<DogGQL, Error> {
         update_dog(ctx, input).await
+    }
+
+    async fn toggle_dog_activation_status(
+        &self,
+        ctx: &Context<'_>,
+        input: GqlToggleDogActivationStatusInput,
+    ) -> Result<DogGQL, Error> {
+        toggle_dog_activation_status(ctx, input).await
     }
 }
 
