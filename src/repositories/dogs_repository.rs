@@ -9,4 +9,6 @@ pub trait DogsRepository: Send + Sync {
     async fn create_dog(&self, dog: Dog) -> Result<(), sqlx::Error>;
 
     async fn update_dog(&self, dog: Dog) -> Result<(), sqlx::Error>;
+
+    async fn toggle_activation_status(&self, dog: Dog) -> Result<(), sqlx::Error>;
 }

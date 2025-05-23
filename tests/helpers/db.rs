@@ -35,34 +35,24 @@ pub async fn setup_test_postgres() -> PgSetup {
         db_user, db_pdw, host, host_port, db_name
     );
 
-    tokio::time::sleep(Duration::from_secs(5)).await;
-
-    // Créer un pool SQLx
-    let pool = PoolOptions::<Postgres>::new()
-        .max_connections(30) // Définir le nombre maximum de connexions
-        .min_connections(5)
-        .connect(&connection_string)
-        .await
-        .expect("Failed to connect to PostgreSQL");
-
-    // let mut tries = 0;
-    // let pool = loop {
-    //     match PoolOptions::<Postgres>::new()
-    //         .max_connections(30)
-    //         .min_connections(5)
-    //         .connect(&connection_string)
-    //         .await
-    //     {
-    //         Ok(pool) => break pool,
-    //         Err(_e) if tries < 10 => {
-    //             tries += 1;
-    //             tokio::time::sleep(Duration::from_secs(1)).await;
-    //         }
-    //         Err(e) => panic!("Failed to connect to PostgreSQL: {}", e),
-    //     }
-    // };
+    let mut tries = 0;
+    let pool = loop {
+        match PoolOptions::<Postgres>::new()
+            .max_connections(30)
+            .min_connections(5)
+            .connect(&connection_string)
+            .await
+        {
+            Ok(pool) => break pool,
+            Err(_e) if tries < 10 => {
+                tries += 1;
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+            Err(e) => panic!("Failed to connect to PostgreSQL: {}", e),
+        }
+    };
     // Appliquer les migrations (si nécessaire)
-    sqlx::migrate!()
+    sqlx::migrate!("./migrations")
         .run(&pool)
         .await
         .expect("Failed to run migrations");

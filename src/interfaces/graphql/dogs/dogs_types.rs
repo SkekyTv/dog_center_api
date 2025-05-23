@@ -15,4 +15,5 @@ pub struct DogGQL {
     pub img_url: Option<String>,
     pub sex: Sex,
     pub icad_id: Option<String>,
+    pub desactivation_status: bool,
 }
