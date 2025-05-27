@@ -622,6 +622,7 @@ dependencies = [
  "async-graphql-axum",
  "async-trait",
  "axum",
+ "base64 0.22.1",
  "chrono",
  "dotenv",
  "listenfd",

@@ -1,6 +1,6 @@
 use crate::app_state::AppState;
-use crate::interfaces::graphql::dogs::dog::DogQuery;
 use crate::interfaces::graphql::dogs::dog_mutations::DogMutation;
+use crate::interfaces::graphql::dogs::dog_query::DogQuery;
 use crate::interfaces::graphql::healthcheck::HealthCheckQuery;
 use async_graphql::{EmptySubscription, MergedObject, Schema};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};

@@ -4,6 +4,17 @@ use uuid::Uuid;
 
 use crate::shared::types::sex::Sex;
 
+use super::shared::page_info::PageInfo;
+
+pub struct DogConnection {
+    pub edges: Vec<DogEdge>,
+    pub page_info: PageInfo,
+}
+pub struct DogEdge {
+    pub cursor: String,
+    pub node: Dog,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Dog {
     pub id: Uuid,

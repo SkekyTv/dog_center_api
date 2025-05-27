@@ -1,10 +1,13 @@
 use async_trait::async_trait;
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 use sqlx::PgPool;
 use tracing::{error, info};
 use uuid::Uuid;
 
-use crate::entities::dogs::Dog;
-use crate::repositories::dogs_repository::DogsRepository;
+use crate::entities::dogs::{Dog, DogConnection, DogEdge};
+use crate::entities::shared::page_info::PageInfo;
+use crate::repositories::dogs_repository::{DogsRepository, ListDogInput};
 
 #[derive(Clone)]
 pub struct PgDogsRepository {
@@ -79,5 +82,47 @@ impl DogsRepository for PgDogsRepository {
         }
 
         Ok(())
+    }
+
+    async fn list_dogs(&self, input: ListDogInput) -> Result<DogConnection, sqlx::Error> {
+        println!("input db : {:?}", input);
+        let result = sqlx::query_as::<_, Dog>("SELECT id::Uuid, name::Text, birthdate, races, img_url, sex, weight, icad_id FROM dogs WHERE ($1 IS NULL OR id > $1::uuid) ORDER BY id ASC LIMIT $2")
+            .bind(input.after_id)
+            .bind(input.first + 1) // to check next page
+            .fetch_all(&self.pool)
+        .await;
+
+        let dogs = match result {
+            Ok(dogs) => dogs,
+            Err(e) => {
+                error!("error list_dogs: {}", e);
+                return Err(e);
+            }
+        };
+
+        let has_next_page = dogs.len() > input.first as usize;
+
+        let items = dogs
+            .into_iter()
+            .take(input.first as usize)
+            .collect::<Vec<_>>();
+
+        let edges: Vec<DogEdge> = items
+            .iter()
+            .map(|dog| DogEdge {
+                cursor: BASE64_STANDARD.encode(dog.id.to_string()),
+                node: dog.clone(),
+            })
+            .collect();
+
+        let end_cursor = edges.last().map(|e| e.cursor.clone());
+
+        Ok(DogConnection {
+            edges,
+            page_info: PageInfo {
+                end_cursor,
+                has_next_page,
+            },
+        })
     }
 }
