@@ -477,8 +477,6 @@ async fn test_graphql_toggle_dog_activation_status_not_found() {
 // Dogs
 #[tokio::test]
 async fn test_graphql_query_dogs_pagination() {
-    use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
-
     let app = set_up_app_test().await;
     let app_url = app.app_url.clone();
     let pool = app.db_pool.clone();

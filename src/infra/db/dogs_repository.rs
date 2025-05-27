@@ -85,8 +85,7 @@ impl DogsRepository for PgDogsRepository {
     }
 
     async fn list_dogs(&self, input: ListDogInput) -> Result<DogConnection, sqlx::Error> {
-        println!("input db : {:?}", input);
-        let result = sqlx::query_as::<_, Dog>("SELECT id::Uuid, name::Text, birthdate, races, img_url, sex, weight, icad_id FROM dogs WHERE ($1 IS NULL OR id > $1::uuid) ORDER BY id ASC LIMIT $2")
+        let result = sqlx::query_as::<_, Dog>("SELECT id::Uuid, name::Text, birthdate, races, img_url, sex, weight, icad_id, desactivated_at FROM dogs WHERE ($1 IS NULL OR id > $1::uuid) ORDER BY id ASC LIMIT $2")
             .bind(input.after_id)
             .bind(input.first + 1) // to check next page
             .fetch_all(&self.pool)
