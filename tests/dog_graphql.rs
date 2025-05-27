@@ -473,3 +473,150 @@ async fn test_graphql_toggle_dog_activation_status_not_found() {
         message
     );
 }
+
+// Dogs
+#[tokio::test]
+async fn test_graphql_query_dogs_pagination() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let pool = app.db_pool.clone();
+    let client = Client::new();
+
+    let repo = PgDogsRepository { pool: pool.clone() };
+    let dog_service = DogsService::new(repo);
+
+    // Création de 3 chiens
+    let dogs = vec![
+        Dog::new(
+            "Alpha".to_string(),
+            Sex::M,
+            None,
+            vec!["Shiba".to_string()],
+            Some(10),
+            None,
+        ),
+        Dog::new(
+            "Bravo".to_string(),
+            Sex::F,
+            None,
+            vec!["Beagle".to_string()],
+            Some(8),
+            None,
+        ),
+        Dog::new(
+            "Charlie".to_string(),
+            Sex::M,
+            None,
+            vec!["Poodle".to_string()],
+            Some(6),
+            None,
+        ),
+    ];
+
+    for dog in &dogs {
+        dog_service
+            .create_dog(dog.clone())
+            .await
+            .expect("Dog creation failed");
+    }
+
+    // Requête GraphQL page 1
+    let query = r#"
+        query ListDogs($input: DogsInput!) {
+            dogs(input: $input) {
+                edges {
+                    node {
+                        id
+                        name
+                    }
+                    cursor
+                }
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                }
+            }
+        }
+    "#;
+
+    let variables = json!({
+        "input": {
+            "cursorPagination": {
+                "first": 2
+            }
+        }
+    });
+
+    let payload = json!({
+        "query": query,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send first page request");
+
+    assert!(response.status().is_success());
+
+    let body: Value = response.json().await.expect("Invalid JSON response");
+
+    let dogs_data = body.pointer("/data/dogs").expect("Missing `dogs`");
+    let edges = dogs_data
+        .get("edges")
+        .expect("Missing `edges`")
+        .as_array()
+        .unwrap();
+    let page_info = dogs_data.get("pageInfo").expect("Missing `pageInfo`");
+
+    assert_eq!(edges.len(), 2);
+    assert_eq!(page_info.get("hasNextPage").unwrap(), &json!(true));
+
+    let end_cursor = page_info
+        .get("endCursor")
+        .expect("Missing `endCursor`")
+        .as_str()
+        .expect("endCursor should be string");
+
+    // Requête GraphQL page 2
+    let variables_page2 = json!({
+        "input": {
+            "cursorPagination": {
+                "first": 2,
+                "after": end_cursor
+            }
+        }
+    });
+
+    let payload_page2 = json!({
+        "query": query,
+        "variables": variables_page2
+    });
+
+    let response_page2 = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload_page2)
+        .send()
+        .await
+        .expect("Failed to send second page request");
+
+    assert!(response_page2.status().is_success());
+
+    let body_page2: Value = response_page2
+        .json()
+        .await
+        .expect("Invalid JSON response for page 2");
+
+    let dogs_data_page2 = body_page2.pointer("/data/dogs").expect("Missing `dogs`");
+    let edges_page2 = dogs_data_page2
+        .get("edges")
+        .expect("Missing `edges`")
+        .as_array()
+        .unwrap();
+    let page_info_page2 = dogs_data_page2.get("pageInfo").expect("Missing `pageInfo`");
+
+    assert_eq!(edges_page2.len(), 1);
+    assert_eq!(page_info_page2.get("hasNextPage").unwrap(), &json!(false));
+}

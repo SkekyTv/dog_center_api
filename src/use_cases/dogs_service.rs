@@ -1,6 +1,7 @@
-use crate::entities::dogs::Dog;
+use crate::entities::dogs::DogConnection;
 use crate::repositories::dogs_repository::DogsRepository;
 use crate::shared::types::sex::Sex;
+use crate::{entities::dogs::Dog, repositories::dogs_repository::ListDogInput};
 use chrono::{DateTime, Utc};
 use thiserror::Error;
 use uuid::Uuid; // pour #[derive(Error)]
@@ -92,5 +93,12 @@ impl<T: DogsRepository> DogsService<T> {
             Ok(_) => Ok(toggled_dog),
             Err(e) => Err(e),
         }
+    }
+
+    pub async fn list_dogs(&self, input: ListDogInput) -> Result<DogConnection, DogServiceError> {
+        self.repo
+            .list_dogs(input)
+            .await
+            .map_err(DogServiceError::from)
     }
 }
