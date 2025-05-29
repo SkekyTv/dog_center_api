@@ -1,18 +1,28 @@
 use crate::{
     entities::dogs::Dog,
-    interfaces::graphql::shared::{graphql_date_time::GraphQLDateTime, uuid::GraphQLUuid},
+    interfaces::graphql::shared::{
+        graphql_date_time::GraphQLDateTime,
+        measure::{Measure, Unit::G},
+        uuid::GraphQLUuid,
+    },
 };
 
 use super::dogs_types::DogGQL;
 
 pub fn map_dog_to_gql(dog: Dog) -> DogGQL {
-    println!("mapper gql: {:?}", dog);
     DogGQL {
         id: GraphQLUuid(dog.id),
         name: dog.name,
         birthdate: dog.birthdate.map(GraphQLDateTime),
         races: dog.races,
-        weight: dog.weight,
+        weight: dog
+            .weight
+            .iter()
+            .map(|w| Measure {
+                value: w.clone(),
+                unit: G,
+            })
+            .collect(),
         img_url: dog.img_url,
         sex: dog.sex,
         icad_id: dog.icad_id,
@@ -34,7 +44,14 @@ mod tests {
 
     #[test]
     fn test_dog_constructor_minimal_params() {
-        let dog = Dog::new("pupuce".to_string(), Sex::M, None, [].to_vec(), None, None);
+        let dog = Dog::new(
+            "pupuce".to_string(),
+            Sex::M,
+            None,
+            [].to_vec(),
+            vec![],
+            None,
+        );
 
         let gql_dog = map_dog_to_gql(dog.clone());
 
@@ -44,7 +61,7 @@ mod tests {
         assert_eq!(gql_dog.sex, Sex::M);
         assert!(gql_dog.races.is_empty());
         assert_eq!(gql_dog.birthdate, None);
-        assert_eq!(gql_dog.weight, None);
+        assert_eq!(gql_dog.weight, vec![]);
         assert_eq!(gql_dog.icad_id, None);
         assert_eq!(gql_dog.desactivation_status, false)
     }
@@ -56,7 +73,7 @@ mod tests {
             Sex::M,
             Some(Utc::now()),
             ["staff".to_string()].to_vec(),
-            Some(100),
+            vec![100],
             Some("icad-fake-id".to_string()),
         );
 
@@ -68,7 +85,13 @@ mod tests {
         assert_eq!(gql_dog.sex, Sex::M);
         assert_eq!(gql_dog.races, ["staff".to_string()].to_vec());
         assert_eq!(gql_dog.birthdate, dog.birthdate.map(GraphQLDateTime));
-        assert_eq!(gql_dog.weight, Some(100));
+        assert_eq!(
+            gql_dog.weight,
+            vec![Measure {
+                unit: G,
+                value: 100,
+            }]
+        );
         assert_eq!(gql_dog.icad_id, Some("icad-fake-id".to_string()));
         assert_eq!(gql_dog.desactivation_status, false)
     }
@@ -80,7 +103,7 @@ mod tests {
             Sex::M,
             Some(Utc::now()),
             ["staff".to_string()].to_vec(),
-            Some(100),
+            vec![100],
             Some("icad-fake-id".to_string()),
         );
         let desactivated_dog = dog.toggle_activation_status();
@@ -96,7 +119,13 @@ mod tests {
         assert_eq!(gql_dog.sex, Sex::M);
         assert_eq!(gql_dog.races, ["staff".to_string()].to_vec());
         assert_eq!(gql_dog.birthdate, dog.birthdate.map(GraphQLDateTime));
-        assert_eq!(gql_dog.weight, Some(100));
+        assert_eq!(
+            gql_dog.weight,
+            vec![Measure {
+                unit: G,
+                value: 100,
+            }]
+        );
         assert_eq!(gql_dog.icad_id, Some("icad-fake-id".to_string()));
         assert_eq!(gql_dog.desactivation_status, true)
     }

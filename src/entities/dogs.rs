@@ -21,7 +21,7 @@ pub struct Dog {
     pub name: String,
     pub birthdate: Option<DateTime<Utc>>,
     pub races: Vec<String>,
-    pub weight: Option<i32>,
+    pub weight: Vec<i32>,
     pub img_url: Option<String>, // unimplemented!()
     pub sex: Sex,
     pub icad_id: Option<String>,
@@ -34,7 +34,7 @@ impl Dog {
         sex: Sex,
         birthdate: Option<DateTime<Utc>>,
         races: Vec<String>,
-        weight: Option<i32>,
+        weight: Vec<i32>,
         icad_id: Option<String>,
     ) -> Self {
         Dog {
@@ -56,7 +56,7 @@ impl Dog {
         sex: Option<Sex>,
         birthdate: Option<Option<DateTime<Utc>>>,
         races: Option<Vec<String>>,
-        weight: Option<Option<i32>>,
+        weight: Option<Vec<i32>>,
         icad_id: Option<Option<String>>,
     ) -> Self {
         Dog {
@@ -68,10 +68,7 @@ impl Dog {
                 None => self.birthdate,
             },
             races: races.unwrap_or_else(|| self.races.clone()),
-            weight: match weight {
-                Some(inner) => inner,
-                None => self.weight,
-            },
+            weight: weight.unwrap_or_else(|| self.weight.clone()),
             img_url: self.img_url.clone(),
             icad_id: match icad_id {
                 Some(inner) => inner,
@@ -106,12 +103,28 @@ mod tests {
             Sex::F,
             None,
             [].to_vec(),
-            Some(100),
+            vec![100],
             None,
         );
         assert_eq!(dog.name, "pupuce");
         assert_eq!(dog.sex, Sex::F);
-        assert_eq!(dog.weight, Some(100));
+        assert_eq!(dog.weight[0], 100);
+    }
+
+    #[test]
+    fn test_update_dog_remove_weight() {
+        let original = Dog::new(
+            "Buddy".to_string(),
+            Sex::M,
+            None,
+            vec!["Golden Retriever".to_string()],
+            vec![30],
+            None,
+        );
+
+        let updated = original.update(None, None, None, None, Some(vec![]), None);
+
+        assert_eq!(updated.weight, Vec::<i32>::new());
     }
 
     #[test]
@@ -121,7 +134,7 @@ mod tests {
             Sex::M,
             Some(Utc::now()),
             vec!["Labrador".to_string()],
-            Some(25),
+            vec![25],
             Some("ICAD123".to_string()),
         );
 
@@ -149,7 +162,7 @@ mod tests {
             Sex::F,
             None,
             vec!["Shiba".to_string()],
-            Some(10),
+            vec![10],
             Some("ICAD456".to_string()),
         );
 
@@ -158,12 +171,11 @@ mod tests {
             None,
             None,
             None,
-            Some(None), // on retire le poids
+            None,
             Some(None), // on retire l'ICAD
         );
 
         assert_eq!(updated.name, original.name);
-        assert_eq!(updated.weight, None);
         assert_eq!(updated.icad_id, None);
     }
 
@@ -174,7 +186,7 @@ mod tests {
             Sex::M,
             None,
             vec!["Labrador".to_string()],
-            Some(30),
+            vec![30],
             None,
         );
 
@@ -195,7 +207,7 @@ mod tests {
             Sex::F,
             None,
             vec!["Border Collie".to_string()],
-            None,
+            vec![],
             None,
         );
 
@@ -215,7 +227,7 @@ mod tests {
             Sex::M,
             existing_birthdate,
             vec!["Berger".to_string()],
-            Some(20),
+            vec![20],
             None,
         );
 
@@ -239,7 +251,7 @@ mod tests {
             Sex::F,
             None,
             vec!["Border Collie".to_string()],
-            None,
+            vec![],
             None,
         );
         let toggled = dog.toggle_activation_status();
@@ -259,7 +271,7 @@ mod tests {
             Sex::F,
             None,
             vec!["Border Collie".to_string()],
-            None,
+            vec![],
             None,
         );
 
@@ -279,7 +291,7 @@ mod tests {
             Sex::F,
             None,
             vec!["Border Collie".to_string()],
-            None,
+            vec![],
             None,
         );
         let toggled = dog.toggle_activation_status();

@@ -18,7 +18,7 @@ pub struct GqlUpdateDogInput {
     pub name: Option<String>,
     pub birthdate: Option<Option<GraphQLDateTime>>,
     pub races: Option<Vec<String>>,
-    pub weight: Option<Option<i32>>,
+    pub weight: Option<Vec<i32>>,
     pub sex: Option<Sex>,
     pub icad_id: Option<Option<String>>,
 }
