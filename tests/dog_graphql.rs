@@ -1,6 +1,7 @@
 use dog_center_api::entities::dogs::Dog;
 use dog_center_api::infra::db::dogs_repository::PgDogsRepository;
 use dog_center_api::shared::types::sex::Sex;
+use dog_center_api::use_cases::dogs_service::CreateDogInput;
 use dog_center_api::use_cases::dogs_service::DogsService;
 use helpers::app_test::set_up_app_test;
 use reqwest::Client;
@@ -19,7 +20,6 @@ async fn test_graphql_register_dog() {
     let client = Client::new();
 
     // Register Dog
-
     let mutation = r#"
         mutation registerDog($input: RegisterDogInput!) {
             registerDog(input: $input) {
@@ -92,16 +92,17 @@ async fn test_graphql_query_dog() {
     let repo = PgDogsRepository { pool: pool.clone() };
     let dog_service = DogsService::new(repo);
 
-    let dog = Dog::new(
-        "panda".to_string(),
-        Sex::F,
-        None,
-        ["caniche".to_string()].to_vec(),
-        Some(4),
-        None,
-    );
-
-    let _ = dog_service.create_dog(dog.clone()).await;
+    let dog = dog_service
+        .create_dog(CreateDogInput {
+            name: "panda".to_string(),
+            sex: Sex::F,
+            birthdate: None,
+            races: ["caniche".to_string()].to_vec(),
+            weight: vec![4],
+            icad_id: None,
+        })
+        .await
+        .unwrap();
 
     let dog_id = dog.id;
 
@@ -118,6 +119,10 @@ async fn test_graphql_query_dog() {
                     birthdate
                     sex
                     races
+                    weight {
+                        unit
+                        value
+                    }
                   }
             }
         "#;
@@ -155,6 +160,10 @@ async fn test_graphql_query_dog() {
     assert_eq!(dog.get("name").unwrap(), "panda");
     assert_eq!(dog.get("sex").unwrap(), "F");
     assert_eq!(dog.get("races").unwrap(), &json!(["caniche"]));
+    assert_eq!(
+        dog.get("weight").unwrap(),
+        &json!([{"unit":"G", "value":4}])
+    );
 }
 
 // dog update
@@ -168,17 +177,15 @@ async fn test_graphql_update_dog_name_only() {
     let repo = PgDogsRepository { pool: pool.clone() };
     let dog_service = DogsService::new(repo);
 
-    let dog = Dog::new(
-        "Rex".to_string(),
-        Sex::M,
-        None,
-        vec!["Labrador".to_string()],
-        Some(10),
-        None,
-    );
-
-    dog_service
-        .create_dog(dog.clone())
+    let dog = dog_service
+        .create_dog(CreateDogInput {
+            name: "Rex".to_string(),
+            sex: Sex::M,
+            birthdate: None,
+            races: vec!["Labrador".to_string()],
+            weight: vec![10],
+            icad_id: None,
+        })
         .await
         .expect("Dog creation failed");
 
@@ -292,17 +299,15 @@ async fn test_graphql_toggle_dog_activation_status_desactivate() {
     let repo = PgDogsRepository { pool: pool.clone() };
     let dog_service = DogsService::new(repo);
 
-    let dog = Dog::new(
-        "Rex".to_string(),
-        Sex::M,
-        None,
-        vec!["Labrador".to_string()],
-        Some(10),
-        None,
-    );
-
-    dog_service
-        .create_dog(dog.clone())
+    let dog = dog_service
+        .create_dog(CreateDogInput {
+            name: "Rex".to_string(),
+            sex: Sex::M,
+            birthdate: None,
+            races: vec!["Labrador".to_string()],
+            weight: vec![10],
+            icad_id: None,
+        })
         .await
         .expect("Dog creation failed");
 
@@ -360,17 +365,17 @@ async fn test_graphql_toggle_dog_activation_status_reactivate() {
     let repo = PgDogsRepository { pool: pool.clone() };
     let dog_service = DogsService::new(repo);
 
-    let dog = Dog::new(
-        "Rex".to_string(),
-        Sex::M,
-        None,
-        vec!["Labrador".to_string()],
-        Some(10),
-        None,
-    );
+    let input_dog = CreateDogInput {
+        name: "Rex".to_string(),
+        sex: Sex::M,
+        birthdate: None,
+        races: vec!["Labrador".to_string()],
+        weight: vec![10],
+        icad_id: None,
+    };
 
-    dog_service
-        .create_dog(dog.clone())
+    let dog = dog_service
+        .create_dog(input_dog.clone())
         .await
         .expect("Dog creation failed");
 
@@ -486,38 +491,40 @@ async fn test_graphql_query_dogs_pagination() {
     let dog_service = DogsService::new(repo);
 
     // Création de 3 chiens
-    let dogs = vec![
-        Dog::new(
-            "Alpha".to_string(),
-            Sex::M,
-            None,
-            vec!["Shiba".to_string()],
-            Some(10),
-            None,
-        ),
-        Dog::new(
-            "Bravo".to_string(),
-            Sex::F,
-            None,
-            vec!["Beagle".to_string()],
-            Some(8),
-            None,
-        ),
-        Dog::new(
-            "Charlie".to_string(),
-            Sex::M,
-            None,
-            vec!["Poodle".to_string()],
-            Some(6),
-            None,
-        ),
+    let input_dogs = vec![
+        CreateDogInput {
+            name: "Alpha".to_string(),
+            sex: Sex::M,
+            birthdate: None,
+            races: vec!["Shiba".to_string()],
+            weight: vec![10],
+            icad_id: None,
+        },
+        CreateDogInput {
+            name: "Bravo".to_string(),
+            sex: Sex::F,
+            birthdate: None,
+            races: vec!["Beagle".to_string()],
+            weight: vec![8],
+            icad_id: None,
+        },
+        CreateDogInput {
+            name: "Charlie".to_string(),
+            sex: Sex::M,
+            birthdate: None,
+            races: vec!["Poodle".to_string()],
+            weight: vec![6],
+            icad_id: None,
+        },
     ];
 
-    for dog in &dogs {
-        dog_service
-            .create_dog(dog.clone())
+    let mut dogs: Vec<Dog> = vec![];
+    for input_dog in &input_dogs {
+        let dog = dog_service
+            .create_dog(input_dog.clone())
             .await
             .expect("Dog creation failed");
+        dogs.push(dog);
     }
 
     // Requête GraphQL page 1

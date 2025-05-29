@@ -2,7 +2,8 @@ use async_graphql::SimpleObject;
 
 use crate::{
     interfaces::graphql::shared::{
-        cursor_pagination::PageInfo, graphql_date_time::GraphQLDateTime, uuid::GraphQLUuid,
+        cursor_pagination::PageInfo, graphql_date_time::GraphQLDateTime, measure::Measure,
+        uuid::GraphQLUuid,
     },
     shared::types::sex::Sex,
 };
@@ -13,7 +14,7 @@ pub struct DogGQL {
     pub name: String,
     pub birthdate: Option<GraphQLDateTime>,
     pub races: Vec<String>,
-    pub weight: Option<i32>,
+    pub weight: Vec<Measure>,
     pub img_url: Option<String>,
     pub sex: Sex,
     pub icad_id: Option<String>,

@@ -7,7 +7,10 @@ use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::{app_state::AppState, entities::dogs::Dog, shared::types::sex::Sex};
+use crate::{
+    app_state::AppState, entities::dogs::Dog, shared::types::sex::Sex,
+    use_cases::dogs_service::CreateDogInput,
+};
 
 use validator::Validate;
 
@@ -22,7 +25,8 @@ pub struct CreateDogRequest {
 
     pub sex: Sex,
 
-    pub weight: Option<i32>,
+    #[serde(default)] // default []
+    pub weight: Vec<i32>,
 
     pub icad_id: Option<String>,
 }
@@ -48,19 +52,21 @@ pub async fn create_dog_handler(
     State(state): State<AppState>,
     Json(payload): Json<CreateDogRequest>,
 ) -> Result<(StatusCode, Json<Dog>), (StatusCode, String)> {
-    let dog = Dog::new(
-        payload.name,
-        payload.sex,
-        payload.birthdate,
-        payload.races,
-        payload.weight,
-        payload.icad_id,
-    );
-
     let repo = &state.dogs_service;
 
-    match repo.create_dog(dog.clone()).await {
-        Ok(_) => Ok((StatusCode::CREATED, Json(dog))),
+    let dog = repo
+        .create_dog(CreateDogInput {
+            name: payload.name,
+            sex: payload.sex,
+            birthdate: payload.birthdate,
+            races: payload.races,
+            weight: payload.weight,
+            icad_id: payload.icad_id,
+        })
+        .await;
+
+    match dog {
+        Ok(d) => Ok((StatusCode::CREATED, Json(d))),
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
     }
 }

@@ -4,7 +4,7 @@ use crate::shared::types::sex::Sex;
 use crate::{entities::dogs::Dog, repositories::dogs_repository::ListDogInput};
 use chrono::{DateTime, Utc};
 use thiserror::Error;
-use uuid::Uuid; // pour #[derive(Error)]
+use uuid::Uuid;
 
 pub struct DogsService<T: DogsRepository> {
     pub repo: T,
@@ -15,9 +15,19 @@ pub struct UpdateDogInput {
     pub name: Option<String>,
     pub birthdate: Option<Option<DateTime<Utc>>>,
     pub races: Option<Vec<String>>,
-    pub weight: Option<Option<i32>>,
+    pub weight: Option<Vec<i32>>,
     pub sex: Option<Sex>,
     pub icad_id: Option<Option<String>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CreateDogInput {
+    pub name: String,
+    pub birthdate: Option<DateTime<Utc>>,
+    pub races: Vec<String>,
+    pub weight: Vec<i32>,
+    pub sex: Sex,
+    pub icad_id: Option<String>,
 }
 
 #[derive(Debug, Error)]
@@ -37,11 +47,26 @@ impl<T: DogsRepository> DogsService<T> {
         self.repo.get_dog(id).await.map_err(DogServiceError::from)
     }
 
-    pub async fn create_dog(&self, dog: Dog) -> Result<(), DogServiceError> {
-        self.repo
-            .create_dog(dog)
+    pub async fn create_dog(&self, input: CreateDogInput) -> Result<Dog, DogServiceError> {
+        let dog = Dog::new(
+            input.name,
+            input.sex,
+            input.birthdate,
+            input.races,
+            input.weight,
+            input.icad_id,
+        );
+
+        let repo_result = self
+            .repo
+            .create_dog(dog.clone())
             .await
-            .map_err(DogServiceError::from)
+            .map_err(DogServiceError::from);
+
+        match repo_result {
+            Ok(_) => Ok(dog),
+            Err(e) => Err(e),
+        }
     }
 
     pub async fn update_dog(&self, input: UpdateDogInput) -> Result<Dog, DogServiceError> {
