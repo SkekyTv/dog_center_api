@@ -42,7 +42,7 @@ class Customers {
     id
     name
     phone_number
-    email
+    contact_email
     birthdate
     sex
     pdw
@@ -71,10 +71,15 @@ class Trainer {
     id
     name
     phone_number
-    email
+    contact_email
     birthdate
     sex
   }
+
+class User {
+    email
+    pdw
+}
 
   Customers --> Dogs : owned
   Trainer --> Customers : trained
@@ -82,6 +87,8 @@ class Trainer {
   Trainer --> TrainingSessions : animate
   Trainer --> TrainingSessionTemplates : define
   Dogs --> Skills : learned
+  User --> Trainer : owned
+  User --> Customers : owned
 
 
 ```
@@ -90,11 +97,11 @@ class Trainer {
 
 `DogCenterApi` is based on clean architecture pattern.
 
-`Entities`: business logic
-`Use Cases`: business services
-`Interfaces/Adapters`: web handlers, implement repositories
-`Infra`: db
-`Main`: entry point and config
+- `Entities`: business logic
+- `Use Cases`: business services
+- `Interfaces/Adapters`: web handlers, implement repositories
+- `Infra`: db
+- `Main`: entry point and config
 
 ```css
 

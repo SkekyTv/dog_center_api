@@ -38,7 +38,4 @@ reqwest = { version = "0.12.15", features = ["json"] }
 testcontainers = "0.18.0"
 thiserror = "2.0.12"
 base64 = "0.22.1"
-# testcontainers-modules = { version = "0.12.0", features = [
-#   "blocking",
-#   "postgres",
-# ] }
+garde = { version = "0.22.0", features = ["email", "full", "phone-number"] }
