@@ -29,16 +29,20 @@ impl TrainersRepository for PgTrainersRepository {
             .bind(&trainer.name)
             .bind(trainer.birthdate)
             .bind(trainer.img_url)
-            .bind(&trainer.sex)
+            .bind(trainer.sex)
             .bind(trainer.contact_email)
             .bind(trainer.phone_number)
         .execute(&self.pool)
         .await;
         match result {
-            Ok(_) => info!("Success"),
-            Err(e) => error!("error create_trainer : {}", e),
+            Ok(_) => {
+                info!("Success");
+                Ok(())
+            }
+            Err(e) => {
+                error!("error create_trainer : {}", e);
+                Err(e)
+            }
         }
-
-        Ok(())
     }
 }

@@ -25,11 +25,11 @@ pub async fn dogs(ctx: &Context<'_>, input: DogsInput) -> Result<DogConnection, 
         .data::<Arc<DogsService<PgDogsRepository>>>()
         .map_err(|_| Error::new("DogService not found in context"))?;
 
-    let after_id = if let Some(cursor) = &input.cursor_pagination.after {
-        Some(String::from_utf8(BASE64_STANDARD.decode(cursor).unwrap()).unwrap())
-    } else {
-        None
-    };
+    let after_id = input
+        .cursor_pagination
+        .after
+        .as_ref()
+        .map(|cursor| String::from_utf8(BASE64_STANDARD.decode(cursor).unwrap()).unwrap());
 
     let dogs = dogs_service
         .list_dogs(ListDogInput {

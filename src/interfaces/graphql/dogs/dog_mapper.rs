@@ -18,18 +18,12 @@ pub fn map_dog_to_gql(dog: Dog) -> DogGQL {
         weight: dog
             .weight
             .iter()
-            .map(|w| Measure {
-                value: w.clone(),
-                unit: G,
-            })
+            .map(|w| Measure { value: *w, unit: G })
             .collect(),
         img_url: dog.img_url,
         sex: dog.sex,
         icad_id: dog.icad_id,
-        desactivation_status: match dog.desactivated_at {
-            Some(_) => true,
-            None => false,
-        },
+        desactivation_status: dog.desactivated_at.is_some(),
     }
 }
 
@@ -63,7 +57,7 @@ mod tests {
         assert_eq!(gql_dog.birthdate, None);
         assert_eq!(gql_dog.weight, vec![]);
         assert_eq!(gql_dog.icad_id, None);
-        assert_eq!(gql_dog.desactivation_status, false)
+        assert!(!gql_dog.desactivation_status)
     }
 
     #[test]
@@ -93,7 +87,7 @@ mod tests {
             }]
         );
         assert_eq!(gql_dog.icad_id, Some("icad-fake-id".to_string()));
-        assert_eq!(gql_dog.desactivation_status, false)
+        assert!(!gql_dog.desactivation_status)
     }
 
     #[test]
@@ -127,6 +121,6 @@ mod tests {
             }]
         );
         assert_eq!(gql_dog.icad_id, Some("icad-fake-id".to_string()));
-        assert_eq!(gql_dog.desactivation_status, true)
+        assert!(gql_dog.desactivation_status)
     }
 }
