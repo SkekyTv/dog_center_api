@@ -2,6 +2,7 @@ use crate::app_state::AppState;
 use crate::interfaces::graphql::dogs::dog_mutations::DogMutation;
 use crate::interfaces::graphql::dogs::dog_query::DogQuery;
 use crate::interfaces::graphql::healthcheck::HealthCheckQuery;
+use crate::interfaces::graphql::trainers::trainer_mutation::TrainerMutation;
 use async_graphql::{EmptySubscription, MergedObject, Schema};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::response::{Html, IntoResponse};
@@ -17,7 +18,7 @@ use tracing::{error, info};
 pub struct QueryRoot(DogQuery, HealthCheckQuery);
 
 #[derive(MergedObject, Default)]
-pub struct MutationRoot(DogMutation);
+pub struct MutationRoot(DogMutation, TrainerMutation);
 
 // Construire le schéma GraphQL
 fn build_schema(state: AppState) -> Schema<QueryRoot, MutationRoot, EmptySubscription> {
@@ -29,6 +30,7 @@ fn build_schema(state: AppState) -> Schema<QueryRoot, MutationRoot, EmptySubscri
         EmptySubscription,
     )
     .data(state.dogs_service.clone())
+    .data(state.trainers_service.clone())
     .finish();
 
     info!("GraphQL schema built successfully.");

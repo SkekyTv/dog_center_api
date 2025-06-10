@@ -31,14 +31,8 @@ pub async fn register_dog(ctx: &Context<'_>, input: RegisterDogInput) -> Result<
         .create_dog(CreateDogInput {
             name: input.name,
             birthdate: input.birthdate.map(|dt| dt.0),
-            races: match input.races {
-                Some(r) => r,
-                None => vec![],
-            },
-            weight: match input.weight {
-                Some(w) => w,
-                None => vec![],
-            },
+            races: input.races.unwrap_or_default(),
+            weight: input.weight.unwrap_or_default(),
             sex: input.sex,
             icad_id: input.icad_id,
         })

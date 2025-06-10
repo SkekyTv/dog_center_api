@@ -47,7 +47,7 @@ impl Trainer {
 
         match trainer.validate() {
             Ok(_) => Ok(trainer),
-            Err(report) => return Err(garde::Error::new(report.to_string())), // Adjust conversion logic
+            Err(report) => Err(garde::Error::new(report.to_string())), // Adjust conversion logic
         }
     }
 }

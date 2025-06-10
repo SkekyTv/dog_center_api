@@ -34,7 +34,7 @@ impl DogsRepository for PgDogsRepository {
             .bind(dog.birthdate)
             .bind(&dog.races)
             .bind(dog.img_url)
-            .bind(&dog.sex)
+            .bind(dog.sex)
             .bind(dog.weight)
             .bind(dog.icad_id)
         .execute(&self.pool)
