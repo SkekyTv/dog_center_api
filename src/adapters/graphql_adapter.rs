@@ -3,6 +3,7 @@ use crate::interfaces::graphql::dogs::dog_mutations::DogMutation;
 use crate::interfaces::graphql::dogs::dog_query::DogQuery;
 use crate::interfaces::graphql::healthcheck::HealthCheckQuery;
 use crate::interfaces::graphql::trainers::trainer_mutation::TrainerMutation;
+use crate::interfaces::graphql::trainers::trainer_query::TrainerQuery;
 use async_graphql::{EmptySubscription, MergedObject, Schema};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::response::{Html, IntoResponse};
@@ -15,7 +16,7 @@ use tracing::{error, info};
 
 // Définir la racine des requêtes GraphQL
 #[derive(MergedObject, Default)]
-pub struct QueryRoot(DogQuery, HealthCheckQuery);
+pub struct QueryRoot(DogQuery, HealthCheckQuery, TrainerQuery);
 
 #[derive(MergedObject, Default)]
 pub struct MutationRoot(DogMutation, TrainerMutation);
