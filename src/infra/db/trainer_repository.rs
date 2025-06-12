@@ -45,4 +45,20 @@ impl TrainersRepository for PgTrainersRepository {
             }
         }
     }
+
+    async fn update_trainer(&self, trainer: Trainer) -> Result<(), sqlx::Error> {
+        let result = sqlx::query("UPDATE trainers SET name = $1, birthdate = $2, sex = $3, contact_email = $4, phone_number = $5, img_url = $6 WHERE id = $7")
+            .bind(trainer.name).bind(trainer.birthdate).bind(trainer.sex).bind(trainer.contact_email).bind(trainer.phone_number).bind(trainer.img_url).bind(trainer.id).execute(&self.pool).await;
+
+        match result {
+            Ok(_) => {
+                info!("Success");
+                Ok(())
+            }
+            Err(e) => {
+                error!("error update_trainer: {}", e);
+                Err(e)
+            }
+        }
+    }
 }

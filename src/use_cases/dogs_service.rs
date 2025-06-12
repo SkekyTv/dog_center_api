@@ -104,9 +104,7 @@ impl<T: DogsRepository> DogsService<T> {
             .await?
             .ok_or(DogServiceError::NotFound)?;
 
-        println!("Dog read: {:?}", dog);
         let toggled_dog = dog.toggle_activation_status();
-        println!("toggled dog: {:?}", toggled_dog);
 
         let repo_result = self
             .repo
