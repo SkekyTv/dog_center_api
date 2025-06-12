@@ -30,6 +30,16 @@ pub struct CreateTrainerInput {
     pub phone_number: Option<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct UpdateTrainerInput {
+    pub id: Uuid,
+    pub name: Option<String>,
+    pub birthdate: Option<Option<DateTime<Utc>>>,
+    pub sex: Option<Sex>,
+    pub contact_email: Option<Option<String>>,
+    pub phone_number: Option<Option<String>>,
+}
+
 impl<T: TrainersRepository> TrainersService<T> {
     pub fn new(repo: T) -> Self {
         Self { repo }
@@ -60,5 +70,35 @@ impl<T: TrainersRepository> TrainersService<T> {
             .map_err(TrainerServiceError::from)?;
 
         Ok(trainer)
+    }
+
+    pub async fn update_trainer(
+        &self,
+        input: UpdateTrainerInput,
+    ) -> Result<Trainer, TrainerServiceError> {
+        let trainer = self
+            .repo
+            .get_trainer(input.id)
+            .await?
+            .ok_or(TrainerServiceError::NotFound)?;
+
+        let updated_trainer = trainer.update(
+            input.name,
+            input.sex,
+            input.birthdate,
+            input.contact_email,
+            input.phone_number,
+        );
+
+        let repo_result = self
+            .repo
+            .update_trainer(updated_trainer.clone())
+            .await
+            .map_err(TrainerServiceError::from);
+
+        match repo_result {
+            Ok(_) => Ok(updated_trainer),
+            Err(e) => Err(e),
+        }
     }
 }
