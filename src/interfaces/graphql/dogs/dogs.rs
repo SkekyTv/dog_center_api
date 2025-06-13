@@ -5,15 +5,15 @@ use base64::{Engine, prelude::BASE64_STANDARD};
 
 use crate::{
     infra::db::dogs_repository::PgDogsRepository,
-    interfaces::graphql::{
-        dogs::dogs_types::DogEdge,
-        shared::cursor_pagination::{CursorPagination, PageInfo},
-    },
+    interfaces::graphql::shared::cursor_pagination::{CursorPagination, PageInfo},
     repositories::dogs_repository::ListDogInput,
     use_cases::dogs_service::DogsService,
 };
 
-use super::{dog_mapper, dogs_types::DogConnection};
+use super::{
+    dog_mapper,
+    dogs_types::{DogConnection, DogEdge},
+};
 
 #[derive(InputObject)]
 pub struct DogsInput {

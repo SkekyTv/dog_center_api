@@ -1,7 +1,9 @@
 use async_graphql::SimpleObject;
 
 use crate::{
-    interfaces::graphql::shared::{graphql_date_time::GraphQLDateTime, uuid::GraphQLUuid},
+    interfaces::graphql::shared::{
+        cursor_pagination::PageInfo, graphql_date_time::GraphQLDateTime, uuid::GraphQLUuid,
+    },
     shared::types::sex::Sex,
 };
 
@@ -13,4 +15,16 @@ pub struct TrainerGQL {
     pub phone_number: Option<String>,
     pub birthdate: Option<GraphQLDateTime>,
     pub sex: Sex,
+}
+
+#[derive(SimpleObject)]
+pub struct TrainerEdge {
+    pub cursor: String,
+    pub node: TrainerGQL,
+}
+
+#[derive(SimpleObject)]
+pub struct TrainerConnection {
+    pub edges: Vec<TrainerEdge>,
+    pub page_info: PageInfo,
 }
