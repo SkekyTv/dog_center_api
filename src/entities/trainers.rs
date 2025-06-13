@@ -3,7 +3,18 @@ use garde::Validate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use super::shared::page_info::PageInfo;
 use crate::shared::types::sex::Sex;
+
+pub struct TrainerConnection {
+    pub edges: Vec<TrainerEdge>,
+    pub page_info: PageInfo,
+}
+
+pub struct TrainerEdge {
+    pub cursor: String,
+    pub node: Trainer,
+}
 
 #[derive(Validate, Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 #[garde(allow_unvalidated)]

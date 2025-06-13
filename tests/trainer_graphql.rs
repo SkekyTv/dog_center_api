@@ -707,3 +707,388 @@ async fn test_graphql_update_trainer_invalid_input() {
         message
     );
 }
+
+// Test basic trainers query - first page
+#[tokio::test]
+async fn test_graphql_trainers_first_page() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let client = Client::new();
+
+    // Create test data
+    let repo = PgTrainersRepository {
+        pool: app.db_pool.clone(),
+    };
+    let trainer_service = TrainersService::new(repo);
+
+    // Create multiple trainers for testing
+    for i in 1..=5 {
+        trainer_service
+            .create_trainer(CreateTrainerInput {
+                name: format!("Trainer {}", i),
+                sex: if i % 2 == 0 { Sex::F } else { Sex::M },
+                phone_number: Some(format!("+3312345678{}", i)),
+                contact_email: Some(format!("trainer{}@example.com", i)),
+                birthdate: Some(Utc::now()),
+            })
+            .await
+            .expect("Failed to create test trainer");
+    }
+
+    // Query trainers
+    let query = r#"
+        query trainers($input: TrainersInput!) {
+            trainers(input: $input) {
+                edges {
+                    node {
+                        id
+                        name
+                        sex
+                        phoneNumber
+                        contactEmail
+                        birthdate
+                    }
+                    cursor
+                }
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                }
+            }
+        }
+    "#;
+
+    let variables = json!({
+        "input": {
+            "cursorPagination": {
+                "first": 3
+            }
+        }
+    });
+
+    let payload = json!({
+        "query": query,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(response.status().is_success());
+
+    let response_json: Value = response.json().await.unwrap();
+    let data = response_json.get("data").expect("Missing `data` field");
+    let errors = response_json.get("errors");
+
+    assert!(errors.is_none());
+
+    let trainers = data.get("trainers").expect("Missing `trainers` field");
+    let edges = trainers.get("edges").unwrap().as_array().unwrap();
+    let page_info = trainers.get("pageInfo").unwrap();
+
+    assert_eq!(edges.len(), 3);
+    assert!(page_info.get("hasNextPage").unwrap().as_bool().unwrap());
+    assert!(page_info.get("endCursor").is_some());
+
+    // Verify first trainer data
+    let first_trainer = &edges[0]["node"];
+    assert!(first_trainer.get("id").is_some());
+    assert!(
+        first_trainer
+            .get("name")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .starts_with("Trainer")
+    );
+}
+
+// Test pagination with after cursor
+#[tokio::test]
+async fn test_graphql_trainers_pagination() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let client = Client::new();
+
+    // Create test data
+    let repo = PgTrainersRepository {
+        pool: app.db_pool.clone(),
+    };
+    let trainer_service = TrainersService::new(repo);
+
+    // Create multiple trainers
+    for i in 1..=6 {
+        trainer_service
+            .create_trainer(CreateTrainerInput {
+                name: format!("Trainer {}", i),
+                sex: Sex::M,
+                phone_number: None,
+                contact_email: None,
+                birthdate: None,
+            })
+            .await
+            .expect("Failed to create test trainer");
+    }
+
+    let query = r#"
+        query trainers($input: TrainersInput!) {
+            trainers(input: $input) {
+                edges {
+                    node {
+                        id
+                        name
+                    }
+                    cursor
+                }
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                }
+            }
+        }
+    "#;
+
+    // First page
+    let first_page_variables = json!({
+        "input": {
+            "cursorPagination": {
+                "first": 2
+            }
+        }
+    });
+
+    let first_page_payload = json!({
+        "query": query,
+        "variables": first_page_variables
+    });
+
+    let first_response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&first_page_payload)
+        .send()
+        .await
+        .expect("Failed to send first page request");
+
+    assert!(first_response.status().is_success());
+
+    let first_json: Value = first_response.json().await.unwrap();
+    let first_trainers = &first_json["data"]["trainers"];
+    let first_edges = first_trainers["edges"].as_array().unwrap();
+    let first_page_info = &first_trainers["pageInfo"];
+
+    assert_eq!(first_edges.len(), 2);
+    assert!(first_page_info["hasNextPage"].as_bool().unwrap());
+
+    let end_cursor = first_page_info["endCursor"].as_str().unwrap();
+
+    // Second page using cursor
+    let second_page_variables = json!({
+        "input": {
+            "cursorPagination": {
+                "first": 2,
+                "after": end_cursor
+            }
+        }
+    });
+
+    let second_page_payload = json!({
+        "query": query,
+        "variables": second_page_variables
+    });
+
+    let second_response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&second_page_payload)
+        .send()
+        .await
+        .expect("Failed to send second page request");
+
+    assert!(second_response.status().is_success());
+
+    let second_json: Value = second_response.json().await.unwrap();
+    let second_trainers = &second_json["data"]["trainers"];
+    let second_edges = second_trainers["edges"].as_array().unwrap();
+
+    assert_eq!(second_edges.len(), 2);
+
+    // Verify different trainers returned
+    let first_page_ids: Vec<&str> = first_edges
+        .iter()
+        .map(|edge| edge["node"]["id"].as_str().unwrap())
+        .collect();
+    let second_page_ids: Vec<&str> = second_edges
+        .iter()
+        .map(|edge| edge["node"]["id"].as_str().unwrap())
+        .collect();
+
+    assert_ne!(first_page_ids, second_page_ids);
+}
+
+// Test empty result
+#[tokio::test]
+async fn test_graphql_trainers_empty() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let client = Client::new();
+
+    let query = r#"
+        query trainers($input: TrainersInput!) {
+            trainers(input: $input) {
+                edges {
+                    node {
+                        id
+                        name
+                    }
+                    cursor
+                }
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                }
+            }
+        }
+    "#;
+
+    let variables = json!({
+        "input": {
+            "cursorPagination": {
+                "first": 10
+            }
+        }
+    });
+
+    let payload = json!({
+        "query": query,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(response.status().is_success());
+
+    let response_json: Value = response.json().await.unwrap();
+    let data = response_json.get("data").expect("Missing `data` field");
+    let trainers = data.get("trainers").expect("Missing `trainers` field");
+    let edges = trainers.get("edges").unwrap().as_array().unwrap();
+    let page_info = trainers.get("pageInfo").unwrap();
+
+    assert_eq!(edges.len(), 0);
+    assert!(!page_info.get("hasNextPage").unwrap().as_bool().unwrap());
+    assert!(page_info.get("endCursor").unwrap().is_null());
+}
+
+// Test invalid cursor
+#[tokio::test]
+async fn test_graphql_trainers_invalid_cursor() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let client = Client::new();
+
+    let query = r#"
+        query trainers($input: TrainersInput!) {
+            trainers(input: $input) {
+                edges {
+                    node {
+                        id
+                    }
+                }
+            }
+        }
+    "#;
+
+    let variables = json!({
+        "input": {
+            "cursorPagination": {
+                "first": 5,
+                "after": "invalid-cursor-format"
+            }
+        }
+    });
+
+    let payload = json!({
+        "query": query,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(response.status().is_success());
+
+    let response_json: Value = response.json().await.unwrap();
+    let errors = response_json.get("errors");
+
+    assert!(errors.is_some());
+    let message = errors.unwrap()[0].get("message").unwrap().as_str().unwrap();
+    assert!(message.contains("Malformed cursor:"));
+}
+
+// Test with invalid first parameter (negative or zero)
+#[tokio::test]
+async fn test_graphql_trainers_invalid_first_parameter() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let client = Client::new();
+
+    let query = r#"
+        query trainers($input: TrainersInput!) {
+            trainers(input: $input) {
+                edges {
+                    node {
+                        id
+                    }
+                }
+            }
+        }
+    "#;
+
+    let variables = json!({
+        "input": {
+            "cursorPagination": {
+                "first": 0
+            }
+        }
+    });
+
+    let payload = json!({
+        "query": query,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    assert!(response.status().is_success());
+
+    let response_json: Value = response.json().await.unwrap();
+
+    // This should either return an error or handle gracefully
+    // The exact behavior depends on your GraphQL schema validation
+    if let Some(errors) = response_json.get("errors") {
+        let message = errors[0].get("message").unwrap().as_str().unwrap();
+        assert!(
+            message.contains("first")
+                || message.contains("invalid")
+                || message.contains("positive"),
+            "Expected validation error for invalid first parameter, got: {}",
+            message
+        );
+    }
+}

@@ -1,9 +1,16 @@
 use async_trait::async_trait;
+use base64::{Engine, prelude::BASE64_STANDARD};
 use sqlx::PgPool;
 use tracing::{error, info};
 use uuid::Uuid;
 
-use crate::{entities::trainers::Trainer, repositories::trainers_repository::TrainersRepository};
+use crate::{
+    entities::{
+        shared::page_info::PageInfo,
+        trainers::{Trainer, TrainerConnection, TrainerEdge},
+    },
+    repositories::trainers_repository::{ListTrainerInput, TrainersRepository},
+};
 
 #[derive(Clone)]
 pub struct PgTrainersRepository {
@@ -60,5 +67,44 @@ impl TrainersRepository for PgTrainersRepository {
                 Err(e)
             }
         }
+    }
+
+    async fn list_trainers(
+        &self,
+        input: ListTrainerInput,
+    ) -> Result<TrainerConnection, sqlx::Error> {
+        let result = sqlx::query_as::<_, Trainer>("SELECT id::Uuid, name::Text, birthdate,  img_url, sex, contact_email, phone_number FROM trainers WHERE ($1 IS NULL OR id > $1::uuid) ORDER BY id ASC LIMIT $2").bind(input.after_id).bind(input.first + 1).fetch_all(&self.pool).await;
+
+        let trainers = match result {
+            Ok(t) => t,
+            Err(e) => {
+                error!("error list_trainers: {}", e);
+                return Err(e);
+            }
+        };
+
+        let has_next_page = trainers.len() > input.first as usize;
+
+        let items = trainers
+            .into_iter()
+            .take(input.first as usize)
+            .collect::<Vec<_>>();
+
+        let edges: Vec<TrainerEdge> = items
+            .iter()
+            .map(|trainer| TrainerEdge {
+                cursor: BASE64_STANDARD.encode(trainer.id.to_string()),
+                node: trainer.clone(),
+            })
+            .collect();
+        let end_cursor = edges.last().map(|e| e.cursor.clone());
+
+        Ok(TrainerConnection {
+            edges,
+            page_info: PageInfo {
+                end_cursor,
+                has_next_page,
+            },
+        })
     }
 }

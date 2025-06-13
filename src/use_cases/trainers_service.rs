@@ -3,7 +3,8 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    entities::trainers::Trainer, repositories::trainers_repository::TrainersRepository,
+    entities::trainers::{Trainer, TrainerConnection},
+    repositories::trainers_repository::{ListTrainerInput, TrainersRepository},
     shared::types::sex::Sex,
 };
 
@@ -100,5 +101,15 @@ impl<T: TrainersRepository> TrainersService<T> {
             Ok(_) => Ok(updated_trainer),
             Err(e) => Err(e),
         }
+    }
+
+    pub async fn list_trainers(
+        &self,
+        input: ListTrainerInput,
+    ) -> Result<TrainerConnection, TrainerServiceError> {
+        self.repo
+            .list_trainers(input)
+            .await
+            .map_err(TrainerServiceError::from)
     }
 }
