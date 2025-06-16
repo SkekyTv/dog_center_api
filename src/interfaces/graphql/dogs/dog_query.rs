@@ -2,7 +2,7 @@ use async_graphql::{Context, Error, Object};
 
 use super::{
     dog::{DogInput, dog},
-    dogs::{DogsInput, dogs},
+    dogs_paginated::{DogsInput, dogs},
     dogs_types::{DogConnection, DogGQL},
 };
 
