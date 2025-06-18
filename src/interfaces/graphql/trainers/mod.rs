@@ -1,3 +1,4 @@
+pub mod delete_trainer;
 pub mod register_trainer;
 pub mod trainer;
 pub mod trainer_mapper;

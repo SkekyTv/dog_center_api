@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use garde::Validate;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use uuid::Uuid;
 
 use super::shared::page_info::PageInfo;
@@ -14,6 +15,12 @@ pub struct TrainerConnection {
 pub struct TrainerEdge {
     pub cursor: String,
     pub node: Trainer,
+}
+
+#[derive(Error, Debug)]
+pub enum TrainerDomainError {
+    #[error("Trainer was deleted at {deleted_at}")]
+    TrainerDeleted { deleted_at: DateTime<Utc> },
 }
 
 #[derive(Validate, Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -36,6 +43,8 @@ pub struct Trainer {
 
     #[garde(url)]
     pub img_url: Option<String>, //unimplemented!()
+
+    pub deleted_at: Option<DateTime<Utc>>,
 }
 
 impl Trainer {
@@ -54,6 +63,7 @@ impl Trainer {
             phone_number,
             sex,
             img_url: None,
+            deleted_at: None,
         };
 
         match trainer.validate() {
@@ -81,7 +91,18 @@ impl Trainer {
             contact_email: contact_email.unwrap_or_else(|| self.contact_email.clone()),
             phone_number: phone_number.unwrap_or_else(|| self.phone_number.clone()),
             img_url: None,
+            deleted_at: self.deleted_at,
         }
+    }
+
+    pub fn delete(&self) -> Result<Self, TrainerDomainError> {
+        if let Some(deleted_at) = self.deleted_at {
+            return Err(TrainerDomainError::TrainerDeleted { deleted_at });
+        }
+        Ok(Trainer {
+            deleted_at: Some(Utc::now()),
+            ..self.clone()
+        })
     }
 }
 
