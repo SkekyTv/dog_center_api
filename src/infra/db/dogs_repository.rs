@@ -40,11 +40,15 @@ impl DogsRepository for PgDogsRepository {
         .execute(&self.pool)
         .await;
         match result {
-            Ok(_) => info!("Success"),
-            Err(e) => error!("error create_dog : {}", e),
+            Ok(_) => {
+                info!("Success create_dog");
+                Ok(())
+            }
+            Err(e) => {
+                error!("error create_dog : {}", e);
+                Err(e)
+            }
         }
-
-        Ok(())
     }
 
     async fn update_dog(&self, dog: Dog) -> Result<(), sqlx::Error> {
@@ -62,11 +66,15 @@ impl DogsRepository for PgDogsRepository {
             .execute(&self.pool)
             .await;
         match result {
-            Ok(_) => info!("Success"),
-            Err(e) => error!("error update_dog : {}", e),
+            Ok(_) => {
+                info!("Success update_dog");
+                Ok(())
+            }
+            Err(e) => {
+                error!("error update_dog : {}", e);
+                Err(e)
+            }
         }
-
-        Ok(())
     }
 
     async fn toggle_activation_status(&self, dog: Dog) -> Result<(), sqlx::Error> {
@@ -77,11 +85,15 @@ impl DogsRepository for PgDogsRepository {
             .await;
 
         match result {
-            Ok(_) => info!("Success"),
-            Err(e) => error!("error toogle_activation_status : {}", e),
+            Ok(_) => {
+                info!("Success toogle_activation_status");
+                Ok(())
+            }
+            Err(e) => {
+                error!("error toogle_activation_status : {}", e);
+                Err(e)
+            }
         }
-
-        Ok(())
     }
 
     async fn list_dogs(&self, input: ListDogInput) -> Result<DogConnection, sqlx::Error> {
