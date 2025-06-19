@@ -1,6 +1,7 @@
 # Dog center
 
-Dog center purpose is to display an interface for `DogTrainer` to manage their `TrainingSessions` and their `Customers`.
+Dog center purpose is to display an interface for `DogTrainer`.
+Help them to manage their `TrainingSessions` and their `Customers`.
 
 `Customers` will be allowed to create an account and manage their dog profile.
 
@@ -82,10 +83,11 @@ class User {
 }
 
   Customers --> Dogs : owned
-  Trainer --> Customers : trained
-  TrainingSessions --> Customers : participate
+  Trainer --> Customers : has customer
+  TrainingSessions --> Dogs : participate
   Trainer --> TrainingSessions : animate
   Trainer --> TrainingSessionTemplates : define
+  TrainingSessions --> TrainingSessionTemplates: based on
   Dogs --> Skills : learned
   User --> Trainer : owned
   User --> Customers : owned
