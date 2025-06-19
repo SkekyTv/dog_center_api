@@ -21,7 +21,7 @@ pub struct PgTrainersRepository {
 impl TrainersRepository for PgTrainersRepository {
     async fn get_trainer(&self, id: Uuid) -> Result<Option<Trainer>, sqlx::Error> {
         sqlx::query_as::<_, Trainer>(
-            "SELECT id::Uuid, name::Text, birthdate,  img_url, sex, contact_email, phone_number FROM trainers WHERE id = $1",
+            "SELECT id::Uuid, name::Text, birthdate,  img_url, sex, contact_email, phone_number, deleted_at FROM trainers WHERE id = $1",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -73,7 +73,7 @@ impl TrainersRepository for PgTrainersRepository {
         &self,
         input: ListTrainerInput,
     ) -> Result<TrainerConnection, sqlx::Error> {
-        let result = sqlx::query_as::<_, Trainer>("SELECT id::Uuid, name::Text, birthdate,  img_url, sex, contact_email, phone_number FROM trainers WHERE ($1 IS NULL OR id > $1::uuid) ORDER BY id ASC LIMIT $2").bind(input.after_id).bind(input.first + 1).fetch_all(&self.pool).await;
+        let result = sqlx::query_as::<_, Trainer>("SELECT id::Uuid, name::Text, birthdate,  img_url, sex, contact_email, phone_number, deleted_at FROM trainers WHERE ($1 IS NULL OR id > $1::uuid) ORDER BY id ASC LIMIT $2").bind(input.after_id).bind(input.first + 1).fetch_all(&self.pool).await;
 
         let trainers = match result {
             Ok(t) => t,
@@ -106,5 +106,20 @@ impl TrainersRepository for PgTrainersRepository {
                 has_next_page,
             },
         })
+    }
+
+    async fn delete_trainer(&self, trainer: Trainer) -> Result<(), sqlx::Error> {
+        let result = sqlx::query("UPDATE trainers SET deleted_at = $1 WHERE id = $2")
+            .bind(trainer.deleted_at)
+            .bind(trainer.id)
+            .execute(&self.pool)
+            .await;
+
+        match result {
+            Ok(_) => info!("Success"),
+            Err(e) => error!("error toogle_activation_status : {}", e),
+        }
+
+        Ok(())
     }
 }

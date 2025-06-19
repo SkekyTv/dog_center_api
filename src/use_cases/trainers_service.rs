@@ -3,7 +3,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    entities::trainers::{Trainer, TrainerConnection},
+    entities::trainers::{Trainer, TrainerConnection, TrainerDomainError},
     repositories::trainers_repository::{ListTrainerInput, TrainersRepository},
     shared::types::sex::Sex,
 };
@@ -20,6 +20,8 @@ pub enum TrainerServiceError {
     DbError(#[from] sqlx::Error),
     #[error("Trainer validation failed: {0}")]
     ValidationError(#[from] garde::Error),
+    #[error("Bad request: {0}")]
+    BadRequest(#[from] TrainerDomainError),
 }
 
 #[derive(Debug, Clone)]
@@ -111,5 +113,28 @@ impl<T: TrainersRepository> TrainersService<T> {
             .list_trainers(input)
             .await
             .map_err(TrainerServiceError::from)
+    }
+
+    pub async fn delete_trainer(&self, id: Uuid) -> Result<Trainer, TrainerServiceError> {
+        let trainer = self
+            .repo
+            .get_trainer(id)
+            .await?
+            .ok_or(TrainerServiceError::NotFound)?;
+
+        println!("trainer before delete: {:?}", trainer);
+        let deleted_trainer = trainer.delete()?;
+        println!("trainer after delete: {:?}", deleted_trainer);
+
+        let repo_result = self
+            .repo
+            .delete_trainer(deleted_trainer.clone())
+            .await
+            .map_err(TrainerServiceError::from);
+
+        match repo_result {
+            Ok(_) => Ok(deleted_trainer),
+            Err(e) => Err(e),
+        }
     }
 }

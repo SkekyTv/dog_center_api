@@ -21,4 +21,6 @@ pub trait TrainersRepository: Send + Sync {
         &self,
         input: ListTrainerInput,
     ) -> Result<TrainerConnection, sqlx::Error>;
+
+    async fn delete_trainer(&self, trainer: Trainer) -> Result<(), sqlx::Error>;
 }

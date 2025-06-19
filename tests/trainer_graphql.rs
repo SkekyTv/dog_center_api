@@ -1092,3 +1092,260 @@ async fn test_graphql_trainers_invalid_first_parameter() {
         );
     }
 }
+
+// Test successful trainer deletion
+#[tokio::test]
+async fn test_graphql_delete_trainer_success() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let client = Client::new();
+
+    // Create test trainer using TrainersService
+    let repo = PgTrainersRepository {
+        pool: app.db_pool.clone(),
+    };
+    let trainer_service = TrainersService::new(repo);
+
+    let test_trainer = trainer_service
+        .create_trainer(CreateTrainerInput {
+            name: "Trainer To Delete".to_string(),
+            sex: Sex::M,
+            phone_number: Some("+33123456789".to_string()),
+            contact_email: Some("delete.me@example.com".to_string()),
+            birthdate: Some(Utc::now()),
+        })
+        .await
+        .expect("Failed to create test trainer");
+
+    let trainer_id = test_trainer.id.to_string();
+
+    // Delete trainer mutation
+    let mutation = r#"
+        mutation deleteTrainer($input: DeleteTrainerInput!) {
+            deleteTrainer(input: $input) {
+                id
+                name
+                sex
+                phoneNumber
+                contactEmail
+                birthdate
+            }
+        }
+    "#;
+
+    let variables = json!({
+        "input": {
+            "id": trainer_id
+        }
+    });
+
+    let payload = json!({
+        "query": mutation,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send delete request");
+
+    assert!(response.status().is_success());
+
+    let response_json: Value = response.json().await.unwrap();
+    let data = response_json.get("data").expect("Missing `data` field");
+    let errors = response_json.get("errors");
+
+    assert!(errors.is_none(), "Unexpected errors: {:?}", errors);
+
+    let deleted_trainer = data
+        .get("deleteTrainer")
+        .expect("Missing `deleteTrainer` field");
+
+    // Verify returned deleted trainer data
+    assert_eq!(deleted_trainer.get("name").unwrap(), "Trainer To Delete");
+    assert_eq!(deleted_trainer.get("sex").unwrap(), "M");
+    assert_eq!(deleted_trainer.get("phoneNumber").unwrap(), "+33123456789");
+    assert_eq!(
+        deleted_trainer.get("contactEmail").unwrap(),
+        "delete.me@example.com"
+    );
+    assert!(deleted_trainer.get("birthdate").is_some());
+}
+
+// Test delete trainer with minimal fields
+#[tokio::test]
+async fn test_graphql_delete_trainer_minimal_fields() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let client = Client::new();
+
+    // Create minimal trainer
+    let repo = PgTrainersRepository {
+        pool: app.db_pool.clone(),
+    };
+    let trainer_service = TrainersService::new(repo);
+
+    let test_trainer = trainer_service
+        .create_trainer(CreateTrainerInput {
+            name: "Minimal Trainer".to_string(),
+            sex: Sex::F,
+            phone_number: None,
+            contact_email: None,
+            birthdate: None,
+        })
+        .await
+        .expect("Failed to create test trainer");
+
+    let trainer_id = test_trainer.id.to_string();
+
+    let mutation = r#"
+        mutation deleteTrainer($input: DeleteTrainerInput!) {
+            deleteTrainer(input: $input) {
+                id
+                name
+                sex
+                phoneNumber
+                contactEmail
+                birthdate
+            }
+        }
+    "#;
+
+    let variables = json!({
+        "input": {
+            "id": trainer_id
+        }
+    });
+
+    let payload = json!({
+        "query": mutation,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send delete request");
+
+    assert!(response.status().is_success());
+
+    let response_json: Value = response.json().await.unwrap();
+    let data = response_json.get("data").expect("Missing `data` field");
+    let errors = response_json.get("errors");
+
+    assert!(errors.is_none());
+
+    let deleted_trainer = data
+        .get("deleteTrainer")
+        .expect("Missing `deleteTrainer` field");
+
+    assert_eq!(deleted_trainer.get("name").unwrap(), "Minimal Trainer");
+    assert_eq!(deleted_trainer.get("sex").unwrap(), "F");
+    assert!(deleted_trainer.get("phoneNumber").unwrap().is_null());
+    assert!(deleted_trainer.get("contactEmail").unwrap().is_null());
+    assert!(deleted_trainer.get("birthdate").unwrap().is_null());
+}
+
+// Test delete trainer not found
+#[tokio::test]
+async fn test_graphql_delete_trainer_not_found() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let client = Client::new();
+
+    let mutation = r#"
+        mutation deleteTrainer($input: DeleteTrainerInput!) {
+            deleteTrainer(input: $input) {
+                id
+                name
+            }
+        }
+    "#;
+
+    // Use a valid UUID format that doesn't exist
+    let non_existent_id = Uuid::new_v4().to_string();
+    let variables = json!({
+        "input": {
+            "id": non_existent_id
+        }
+    });
+
+    let payload = json!({
+        "query": mutation,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send delete request");
+
+    assert!(response.status().is_success());
+
+    let response_json: Value = response.json().await.unwrap();
+    let errors = response_json
+        .get("errors")
+        .expect("Expected GraphQL errors");
+    let message = errors[0].get("message").unwrap().as_str().unwrap();
+
+    assert!(
+        message.contains("Error deleting trainer") && message.contains("TrainerNotFound"),
+        "Expected trainer not found error, got: {}",
+        message
+    );
+}
+
+// Test delete trainer with invalid UUID format
+#[tokio::test]
+async fn test_graphql_delete_trainer_invalid_uuid() {
+    let app = set_up_app_test().await;
+    let app_url = app.app_url.clone();
+    let client = Client::new();
+
+    let mutation = r#"
+        mutation deleteTrainer($input: DeleteTrainerInput!) {
+            deleteTrainer(input: $input) {
+                id
+                name
+            }
+        }
+    "#;
+
+    let variables = json!({
+        "input": {
+            "id": "invalid-uuid-format"
+        }
+    });
+
+    let payload = json!({
+        "query": mutation,
+        "variables": variables
+    });
+
+    let response = client
+        .post(format!("{}/graphql", app_url))
+        .json(&payload)
+        .send()
+        .await
+        .expect("Failed to send delete request");
+
+    assert!(response.status().is_success());
+
+    let response_json: Value = response.json().await.unwrap();
+    let errors = response_json
+        .get("errors")
+        .expect("Expected GraphQL errors");
+    let message = errors[0].get("message").unwrap().as_str().unwrap();
+
+    assert!(
+        message.contains("UUID") || message.contains("invalid") || message.contains("format"),
+        "Expected UUID validation error, got: {}",
+        message
+    );
+}

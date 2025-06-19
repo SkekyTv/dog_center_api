@@ -1,6 +1,7 @@
 use async_graphql::{Context, Error, Object};
 
 use super::{
+    delete_trainer::{GqlDeleteTrainerInput, delete_trainer},
     register_trainer::{RegisterTrainerInput, register_trainer},
     trainers_types::TrainerGQL,
     update_trainer::{GqlUpdateTrainerInput, update_trainer},
@@ -24,6 +25,14 @@ impl TrainerMutation {
         input: GqlUpdateTrainerInput,
     ) -> Result<TrainerGQL, Error> {
         update_trainer(ctx, input).await
+    }
+
+    async fn delete_trainer(
+        &self,
+        ctx: &Context<'_>,
+        input: GqlDeleteTrainerInput,
+    ) -> Result<TrainerGQL, Error> {
+        delete_trainer(ctx, input).await
     }
 }
 
