@@ -1,21 +1,28 @@
 use std::sync::Arc;
 
 use async_graphql::{Context, Error, InputObject};
+use garde::Validate;
 
 use crate::{
     infra::db::dogs_repository::PgDogsRepository,
-    interfaces::graphql::shared::graphql_date_time::GraphQLDateTime,
+    interfaces::graphql::shared::{
+        graphql_date_time::GraphQLDateTime,
+        validators::option_vec_i32_validator::create_vec_range_validator,
+    },
     shared::types::sex::Sex,
     use_cases::dogs_service::{CreateDogInput, DogsService},
 };
 
 use super::{dog_mapper, dogs_types::DogGQL};
 
-#[derive(InputObject)]
+#[derive(InputObject, Validate)]
+#[garde(allow_unvalidated)]
 pub struct RegisterDogInput {
+    #[garde(length(min = 1, max = 100))]
     pub name: String,
     pub birthdate: Option<GraphQLDateTime>,
     pub races: Option<Vec<String>>,
+    #[garde(custom(create_vec_range_validator(-50, 50)))]
     pub weight: Option<Vec<i32>>,
     pub img_url: Option<String>,
     pub sex: Sex,
