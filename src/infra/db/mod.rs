@@ -1,2 +1,2 @@
 pub mod dogs_repository;
-pub mod trainer_repository;
+pub mod trainers_repository;

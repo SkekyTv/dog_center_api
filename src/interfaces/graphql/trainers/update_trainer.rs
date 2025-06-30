@@ -4,7 +4,7 @@ use async_graphql::{Context, Error, InputObject};
 use garde::Validate;
 
 use crate::{
-    infra::db::trainer_repository::PgTrainersRepository,
+    infra::db::trainers_repository::PgTrainersRepository,
     interfaces::graphql::shared::{graphql_date_time::GraphQLDateTime, uuid::GraphQLUuid},
     shared::types::sex::Sex,
     use_cases::trainers_service::{TrainersService, UpdateTrainerInput},

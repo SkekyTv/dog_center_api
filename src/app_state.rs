@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tracing::info;
 
 use crate::{
-    infra::db::{dogs_repository::PgDogsRepository, trainer_repository::PgTrainersRepository},
+    infra::db::{dogs_repository::PgDogsRepository, trainers_repository::PgTrainersRepository},
     use_cases::{dogs_service::DogsService, trainers_service::TrainersService},
 };
 

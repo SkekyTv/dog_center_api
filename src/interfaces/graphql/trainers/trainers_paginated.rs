@@ -4,7 +4,7 @@ use async_graphql::{Context, Error, InputObject};
 use base64::{Engine, prelude::BASE64_STANDARD};
 
 use crate::{
-    infra::db::trainer_repository::PgTrainersRepository,
+    infra::db::trainers_repository::PgTrainersRepository,
     interfaces::graphql::shared::cursor_pagination::{CursorPagination, PageInfo},
     repositories::trainers_repository::ListTrainerInput,
     use_cases::trainers_service::TrainersService,

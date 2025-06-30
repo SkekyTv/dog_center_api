@@ -1,5 +1,5 @@
 use chrono::Utc;
-use dog_center_api::infra::db::trainer_repository::PgTrainersRepository;
+use dog_center_api::infra::db::trainers_repository::PgTrainersRepository;
 use dog_center_api::shared::types::sex::Sex;
 use dog_center_api::use_cases::trainers_service::CreateTrainerInput;
 use dog_center_api::use_cases::trainers_service::TrainersService;

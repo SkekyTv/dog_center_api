@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::{Context, Error, InputObject};
 
 use crate::{
-    infra::db::trainer_repository::PgTrainersRepository,
+    infra::db::trainers_repository::PgTrainersRepository,
     interfaces::graphql::shared::uuid::GraphQLUuid, use_cases::trainers_service::TrainersService,
 };
 
