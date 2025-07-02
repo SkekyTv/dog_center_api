@@ -39,3 +39,6 @@ testcontainers = "0.18.0"
 thiserror = "2.0.12"
 base64 = "0.22.1"
 garde = { version = "0.22.0", features = ["email", "full", "phone-number"] }
+cracken = "1.0.1"
+jsonwebtoken = "9.3.1"
+argon2 = "0.5.3"
