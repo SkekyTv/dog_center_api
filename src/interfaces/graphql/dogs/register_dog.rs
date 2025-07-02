@@ -5,11 +5,9 @@ use garde::Validate;
 
 use crate::{
     infra::db::dogs_repository::PgDogsRepository,
-    interfaces::graphql::shared::{
-        graphql_date_time::GraphQLDateTime,
-        validators::option_vec_i32_validator::create_vec_range_validator,
-    },
+    interfaces::graphql::shared::graphql_date_time::GraphQLDateTime,
     shared::types::sex::Sex,
+    shared::validators::option_vec_i32_validator::create_vec_range_validator,
     use_cases::dogs_service::{CreateDogInput, DogsService},
 };
 
