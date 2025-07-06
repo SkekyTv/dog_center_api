@@ -21,6 +21,11 @@ pub struct User {
     pub pdw_hash: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Authorize {
+    pub token: String,
+}
+
 impl User {
     pub fn new(email: String, pdw: String) -> Result<Self, garde::Error> {
         let pdw_hash = User::hash_password(&pdw).map_err(|e| garde::Error::new(e.to_string()))?;
@@ -47,8 +52,8 @@ impl User {
         Ok(password_hash)
     }
 
-    pub fn verify_password(&self, password: &str, hash: &str) -> Result<bool, PasswordHashError> {
-        let parsed_hash = PasswordHash::new(hash)?;
+    pub fn verify_password(&self, password: &str) -> Result<bool, PasswordHashError> {
+        let parsed_hash = PasswordHash::new(&self.pdw_hash)?;
         let argon2 = Argon2::default();
         match argon2.verify_password(password.as_bytes(), &parsed_hash) {
             Ok(_) => Ok(true),
@@ -90,10 +95,10 @@ mod tests {
             email: "foo@bar.com".to_string(),
             pdw_hash: hash.clone(),
         };
-        let is_valid = user.verify_password(&password, &hash).unwrap();
+        let is_valid = user.verify_password(&password).unwrap();
         assert!(is_valid);
 
-        let is_invalid = user.verify_password("wrongpassword", &hash).unwrap();
+        let is_invalid = user.verify_password("wrongpassword").unwrap();
         assert!(!is_invalid);
     }
 
@@ -104,7 +109,7 @@ mod tests {
             email: "foo@bar.com".to_string(),
             pdw_hash: "not_a_real_hash".to_string(),
         };
-        let result = user.verify_password("password", "not_a_real_hash");
+        let result = user.verify_password("password");
         assert!(result.is_err());
     }
 }

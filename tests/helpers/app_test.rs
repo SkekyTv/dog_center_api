@@ -48,7 +48,7 @@ pub async fn set_up_app_test() -> TestSetup {
         }
     });
 
-    wait_for_server(&graphql_url.as_str(), 30).await;
+    wait_for_server(graphql_url.as_str(), 30).await;
     info!("Test graphql app started at {}", graphql_url);
     info!("Test rest app started at {}", rest_url);
 

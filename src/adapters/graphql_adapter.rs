@@ -4,6 +4,7 @@ use crate::interfaces::graphql::dogs::dog_query::DogQuery;
 use crate::interfaces::graphql::healthcheck::HealthCheckQuery;
 use crate::interfaces::graphql::trainers::trainer_mutation::TrainerMutation;
 use crate::interfaces::graphql::trainers::trainer_query::TrainerQuery;
+use crate::interfaces::graphql::users::user_mutation::UserMutation;
 use async_graphql::{EmptySubscription, MergedObject, Schema};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::response::{Html, IntoResponse};
@@ -19,7 +20,7 @@ use tracing::{error, info};
 pub struct QueryRoot(DogQuery, HealthCheckQuery, TrainerQuery);
 
 #[derive(MergedObject, Default)]
-pub struct MutationRoot(DogMutation, TrainerMutation);
+pub struct MutationRoot(DogMutation, TrainerMutation, UserMutation);
 
 // Construire le schéma GraphQL
 fn build_schema(state: AppState) -> Schema<QueryRoot, MutationRoot, EmptySubscription> {
@@ -32,6 +33,8 @@ fn build_schema(state: AppState) -> Schema<QueryRoot, MutationRoot, EmptySubscri
     )
     .data(state.dogs_service.clone())
     .data(state.trainers_service.clone())
+    .data(state.jwt_service.clone())
+    .data(state.users_service.clone())
     .finish();
 
     info!("GraphQL schema built successfully.");
@@ -53,8 +56,6 @@ pub async fn start_graphql_server(
         .route("/graphql", get(graphql_playground).post(graphql_handler))
         .layer(Extension(schema))
         .layer(cors);
-
-    // let listener = get_listener().await.expect("failed to bind listener");
 
     info!(
         "GraphQL Server listening on: {}",

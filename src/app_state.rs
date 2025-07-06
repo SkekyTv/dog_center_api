@@ -8,7 +8,10 @@ use crate::{
         users_repository::PgUsersRepository,
     },
     use_cases::{
-        dogs_service::DogsService, trainers_service::TrainersService, users_service::UsersService,
+        dogs_service::DogsService,
+        jwt_service::{JwtService, JwtServiceTrait},
+        trainers_service::TrainersService,
+        users_service::UsersService,
     },
 };
 
@@ -16,7 +19,8 @@ use crate::{
 pub struct AppState {
     pub dogs_service: Arc<DogsService<PgDogsRepository>>,
     pub trainers_service: Arc<TrainersService<PgTrainersRepository>>,
-    pub users_service: Arc<UsersService<PgUsersRepository>>,
+    pub users_service: Arc<UsersService<PgUsersRepository, dyn JwtServiceTrait>>,
+    pub jwt_service: Arc<dyn JwtServiceTrait>,
 }
 
 impl AppState {
@@ -29,13 +33,19 @@ impl AppState {
         let trainers_service = Arc::new(TrainersService::new(trainers_repo));
         info!("TrainersService initialized.");
 
+        let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+        let jwt_service: Arc<dyn JwtServiceTrait> = Arc::new(JwtService::new(jwt_secret));
+        info!("JwtService initialized.");
+
         let users_repo = PgUsersRepository { pool };
-        let users_service = Arc::new(UsersService::new(users_repo));
-        info!("TrainersService initialized.");
+        let users_service = Arc::new(UsersService::new(users_repo, jwt_service.clone()));
+        info!("UsersService initialized.");
+
         AppState {
             dogs_service,
             trainers_service,
             users_service,
+            jwt_service,
         }
     }
 }

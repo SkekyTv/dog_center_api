@@ -6,31 +6,33 @@ use crate::{
     infra::db::users_repository::PgUsersRepository,
     use_cases::{
         jwt_service::JwtServiceTrait,
-        users_service::{SignUpInput, UsersService},
+        users_service::{LoginInput, UsersService},
     },
 };
 
-use super::{user_mapper::user_mapper, user_types::UserGQL};
+use super::{authorize_mapper::authorize_mapper, authorize_type::AuthorizeGQL};
 
 #[derive(InputObject)]
-#[graphql(name = "SignUpInput")]
-pub struct SignUpInputGQL {
+#[graphql(name = "LoginInput")]
+pub struct LoginInputGQL {
     pub email: String,
     pub pdw: String,
 }
 
-pub async fn sign_up(ctx: &Context<'_>, input: SignUpInputGQL) -> Result<UserGQL, Error> {
+pub async fn login(ctx: &Context<'_>, input: LoginInputGQL) -> Result<AuthorizeGQL, Error> {
     let users_service = ctx
         .data::<Arc<UsersService<PgUsersRepository, dyn JwtServiceTrait>>>()
         .map_err(|_| Error::new("UsersService not found in context"))?;
 
-    let new_user = users_service
-        .sign_up(SignUpInput {
+    let token_result = users_service
+        .login(LoginInput {
             email: input.email,
             pdw: input.pdw,
         })
-        .await
-        .map_err(|e| Error::new(format!("Error creating user: {}", e)))?;
+        .await;
 
-    Ok(user_mapper(new_user))
+    match token_result {
+        Ok(auth) => Ok(authorize_mapper(auth)),
+        Err(e) => Err(Error::new(format!("Error login: {}", e))),
+    }
 }
